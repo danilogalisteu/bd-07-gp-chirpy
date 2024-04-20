@@ -70,29 +70,25 @@ func validateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(params.Body) > 140 {
-		type returnError struct {
-			Error string `json:"error"`
-		}
-		respBody := returnError{
-			Error: "Chirp is too long",
-		}
-		dat, err := json.Marshal(respBody)
-		if err != nil {
-			log.Printf("Error marshalling JSON: %s", err)
-			w.WriteHeader(500)
-			return
-		}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(400)
-		w.Write(dat)
+		respondWithError(w, 400, "Chirp is too long")
 		return
-
 	}
+
 	type returnValid struct {
 		Valid bool `json:"valid"`
 	}
 	respBody := returnValid{
 		Valid: true,
+	}
+	respondWithJSON(w, 200, respBody)
+}
+
+func respondWithError(w http.ResponseWriter, code int, msg string) {
+	type returnError struct {
+		Error string `json:"error"`
+	}
+	respBody := returnError{
+		Error: msg,
 	}
 	dat, err := json.Marshal(respBody)
 	if err != nil {
@@ -101,7 +97,19 @@ func validateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
+	w.WriteHeader(code)
+	w.Write(dat)
+}
+
+func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
+	dat, err := json.Marshal(payload)
+	if err != nil {
+		log.Printf("Error marshalling JSON: %s", err)
+		w.WriteHeader(500)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
 	w.Write(dat)
 }
 
