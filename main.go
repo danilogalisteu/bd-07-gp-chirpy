@@ -54,6 +54,7 @@ func main() {
 		w.Write([]byte("OK"))
 	})
 	mux.HandleFunc("/metrics", apiCfg.middlewareMetricsCount)
+	mux.HandleFunc("/reset", apiCfg.middlewareMetricsReset)
 
 	corsMux := middlewareCors(mux)
 	server := http.Server{
