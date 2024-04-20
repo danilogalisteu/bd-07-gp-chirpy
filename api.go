@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 )
 
 type apiConfig struct {
@@ -17,8 +18,8 @@ type parameters struct {
 type returnError struct {
 	Error string `json:"error"`
 }
-type returnValid struct {
-	Valid bool `json:"valid"`
+type returnClean struct {
+	CleanedBody string `json:"cleaned_body"`
 }
 
 func healthHandler(w http.ResponseWriter, r *http.Request) {
@@ -72,7 +73,8 @@ func validateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondWithJSON(w, 200, returnValid{Valid: true})
+	cleaned := cleanMessage(params.Body)
+	respondWithJSON(w, 200, returnClean{CleanedBody: cleaned})
 }
 
 func respondWithError(w http.ResponseWriter, code int, msg string) {
@@ -97,4 +99,19 @@ func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
 	w.Write(dat)
+}
+
+func cleanMessage(msg string) string {
+	profane := []string{"kerfuffle", "sharbert", "fornax"}
+	clean := make([]string, 0)
+	for _, word := range strings.Split(msg, " ") {
+		for _, pword := range profane {
+			if strings.ToLower(word) == pword {
+				word = "****"
+				break
+			}
+		}
+		clean = append(clean, word)
+	}
+	return strings.Join(clean, " ")
 }
