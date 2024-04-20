@@ -55,11 +55,17 @@ func (cfg *apiConfig) middlewareMetricsReset(w http.ResponseWriter, r *http.Requ
 	w.Write([]byte("OK"))
 }
 
-func validateHandler(w http.ResponseWriter, r *http.Request) {
-	type parameters struct {
-		Body string `json:"body"`
-	}
+type parameters struct {
+	Body string `json:"body"`
+}
+type returnError struct {
+	Error string `json:"error"`
+}
+type returnValid struct {
+	Valid bool `json:"valid"`
+}
 
+func validateHandler(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	params := parameters{}
 	err := decoder.Decode(&params)
@@ -74,23 +80,11 @@ func validateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	type returnValid struct {
-		Valid bool `json:"valid"`
-	}
-	respBody := returnValid{
-		Valid: true,
-	}
-	respondWithJSON(w, 200, respBody)
+	respondWithJSON(w, 200, returnValid{Valid: true,})
 }
 
 func respondWithError(w http.ResponseWriter, code int, msg string) {
-	type returnError struct {
-		Error string `json:"error"`
-	}
-	respBody := returnError{
-		Error: msg,
-	}
-	dat, err := json.Marshal(respBody)
+	dat, err := json.Marshal(returnError{Error: msg,})
 	if err != nil {
 		log.Printf("Error marshalling JSON: %s", err)
 		w.WriteHeader(500)
