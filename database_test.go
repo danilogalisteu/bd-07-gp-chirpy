@@ -15,7 +15,7 @@ func TestDB(t *testing.T) {
 
 	db, err := NewDB(fname)
 	if err != nil {
-		t.Fatalf("Error creating new DB:\n%v", err)
+		t.Fatalf("Error creating DB with file %s:\n%v", fname, err)
 	}
 
 	chirps, err := db.GetChirps()
