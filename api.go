@@ -18,9 +18,6 @@ type parameters struct {
 type returnError struct {
 	Error string `json:"error"`
 }
-type returnClean struct {
-	CleanedBody string `json:"cleaned_body"`
-}
 
 func healthHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
@@ -56,25 +53,6 @@ func (cfg *apiConfig) middlewareMetricsReset(w http.ResponseWriter, r *http.Requ
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("OK"))
-}
-
-func validateHandler(w http.ResponseWriter, r *http.Request) {
-	decoder := json.NewDecoder(r.Body)
-	params := parameters{}
-	err := decoder.Decode(&params)
-	if err != nil {
-		log.Printf("Error decoding parameters: %s", err)
-		w.WriteHeader(500)
-		return
-	}
-
-	if len(params.Body) > 140 {
-		respondWithError(w, 400, "Chirp is too long")
-		return
-	}
-
-	cleaned := cleanMessage(params.Body)
-	respondWithJSON(w, 200, returnClean{CleanedBody: cleaned})
 }
 
 func respondWithError(w http.ResponseWriter, code int, msg string) {
@@ -114,4 +92,50 @@ func cleanMessage(msg string) string {
 		clean = append(clean, word)
 	}
 	return strings.Join(clean, " ")
+}
+
+func postChirp(w http.ResponseWriter, r *http.Request) {
+	decoder := json.NewDecoder(r.Body)
+	params := parameters{}
+	err := decoder.Decode(&params)
+	if err != nil {
+		log.Printf("Error decoding parameters: %s", err)
+		w.WriteHeader(500)
+		return
+	}
+
+	if len(params.Body) > 140 {
+		respondWithError(w, 400, "Chirp is too long")
+		return
+	}
+
+	fname := "database.json"
+	db, err := NewDB(fname)
+	if err != nil {
+		log.Printf("Error creating DB with file %s:\n%v", fname, err)
+	}
+
+	cleaned := cleanMessage(params.Body)
+
+	chirp, err := db.CreateChirp(cleaned)
+	if err != nil {
+		log.Printf("Error creating chirp on DB:\n%v", err)
+	}
+
+	respondWithJSON(w, 201, chirp)
+}
+
+func getChirps(w http.ResponseWriter, r *http.Request) {
+	fname := "database.json"
+	db, err := NewDB(fname)
+	if err != nil {
+		log.Printf("Error creating DB with file %s:\n%v", fname, err)
+	}
+
+	chirps, err := db.GetChirps()
+	if err != nil {
+		log.Printf("Error getting items from DB:\n%v", err)
+	}
+
+	respondWithJSON(w, 200, chirps)
 }
