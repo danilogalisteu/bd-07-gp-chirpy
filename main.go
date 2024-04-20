@@ -47,14 +47,14 @@ func main() {
 	apiCfg := apiConfig{}
 
 	mux := http.NewServeMux()
-	mux.Handle("/app/*", apiCfg.middlewareMetricsInc(http.StripPrefix("/app", http.FileServer(http.Dir(".")))))
-	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+	mux.Handle("GET /app/*", apiCfg.middlewareMetricsInc(http.StripPrefix("/app", http.FileServer(http.Dir(".")))))
+	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("OK"))
 	})
-	mux.HandleFunc("/metrics", apiCfg.middlewareMetricsCount)
-	mux.HandleFunc("/reset", apiCfg.middlewareMetricsReset)
+	mux.HandleFunc("GET /metrics", apiCfg.middlewareMetricsCount)
+	mux.HandleFunc("GET /reset", apiCfg.middlewareMetricsReset)
 
 	corsMux := middlewareCors(mux)
 	server := http.Server{
