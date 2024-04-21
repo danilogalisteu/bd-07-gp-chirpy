@@ -28,7 +28,8 @@ func TestDBUsers(t *testing.T) {
 	}
 
 	user_email := "user@example.com"
-	user, err := db.CreateUser(user_email)
+	user_password := "123456"
+	user, err := db.CreateUser(user_email, user_password)
 	if err != nil {
 		t.Errorf("Error creating user on DB:\n%v", err)
 	}
@@ -45,11 +46,16 @@ func TestDBUsers(t *testing.T) {
 	}
 
 	if users[0].Email != user_email {
-		t.Errorf("Content in the DB ('%s') doesn't match the input text ('%s')", users[0].Email, user_email)
+		t.Errorf("Email in the DB ('%s') doesn't match the input text ('%s')", users[0].Email, user_email)
+	}
+
+	if users[0].Password != user_password {
+		t.Errorf("Password in the DB ('%s') doesn't match the input text ('%s')", users[0].Password, user_password)
 	}
 
 	new_user_email := "admin@example.com"
-	user, err = db.CreateUser(new_user_email)
+	new_user_password := "abcdef"
+	user, err = db.CreateUser(new_user_email, new_user_password)
 	if err != nil {
 		t.Errorf("Error creating user on DB:\n%v", err)
 	}
@@ -66,6 +72,10 @@ func TestDBUsers(t *testing.T) {
 	}
 
 	if users[1].Email != new_user_email {
-		t.Errorf("Content in the DB ('%s') doesn't match the input text ('%s')", users[1].Email, new_user_email)
+		t.Errorf("Email in the DB ('%s') doesn't match the input text ('%s')", users[1].Email, new_user_email)
+	}
+
+	if users[1].Password != new_user_password {
+		t.Errorf("Password in the DB ('%s') doesn't match the input text ('%s')", users[1].Password, new_user_password)
 	}
 }
