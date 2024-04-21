@@ -27,14 +27,18 @@ func main() {
 
 	fname := "database.json"
 	if *dbg {
-		err := os.Remove(fname)
-		if err != nil {
-			log.Printf("Error removing DB file %s:\n%v", fname, err)
+		if _, err := os.Stat(fname); os.IsNotExist(err) {
+			log.Printf("DB file '%s' doesn't exist:\n%v", fname, err)
+		} else {
+			err := os.Remove(fname)
+			if err != nil {
+				log.Printf("Error removing DB file '%s':\n%v", fname, err)
+			}
 		}
 	}
 	db, err := database.NewDB(fname)
 	if err != nil {
-		log.Printf("Error creating DB with file %s:\n%v", fname, err)
+		log.Printf("Error creating DB with file '%s':\n%v", fname, err)
 	}
 
 	apiCfg := apiConfig{
