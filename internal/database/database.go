@@ -33,9 +33,7 @@ func (db *DB) ensureDB() error {
 	if err != nil {
 		return err
 	}
-	if err := f.Close(); err != nil {
-		return err
-	}
+	defer f.Close()
 	return nil
 }
 
@@ -53,6 +51,7 @@ func (db *DB) loadDB() (DBStructure, error) {
 	if err != nil {
 		return dbStructure, err
 	}
+	defer f.Close()
 
 	fi, err := f.Stat()
 	if err != nil {
@@ -65,10 +64,6 @@ func (db *DB) loadDB() (DBStructure, error) {
 		if err := decoder.Decode(&dbStructure); err != nil {
 			return dbStructure, err
 		}
-	}
-
-	if err := f.Close(); err != nil {
-		return dbStructure, err
 	}
 
 	return dbStructure, nil
@@ -85,6 +80,7 @@ func (db *DB) writeDB(dbStructure DBStructure) error {
 	if err != nil {
 		return err
 	}
+	defer f.Close()
 
 	data, err := json.Marshal(dbStructure)
 	if err != nil {
@@ -96,8 +92,5 @@ func (db *DB) writeDB(dbStructure DBStructure) error {
 		return err
 	}
 
-	if err := f.Close(); err != nil {
-		return err
-	}
 	return nil
 }
