@@ -43,7 +43,7 @@ func main() {
 
 	apiCfg := apiConfig{
 		fileserverHits: 0,
-		DB: db,
+		DB:             db,
 	}
 
 	mux := http.NewServeMux()

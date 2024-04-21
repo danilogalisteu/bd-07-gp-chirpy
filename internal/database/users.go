@@ -1,5 +1,11 @@
 package database
 
+import (
+	"errors"
+
+	"golang.org/x/crypto/bcrypt"
+)
+
 type User struct {
 	ID       int    `json:"id"`
 	Email    string `json:"email"`
@@ -15,10 +21,15 @@ func (db *DB) CreateUser(email string, password string) (User, error) {
 		return user, err
 	}
 
+	passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), 10)
+	if err != nil {
+		return user, err
+	}
+
 	id := len(dbStructure.Users) + 1
 	user.ID = id
 	user.Email = email
-	user.Password = password
+	user.Password = string(passwordHash)
 
 	dbStructure.Users[id] = user
 

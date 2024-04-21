@@ -3,6 +3,8 @@ package database
 import (
 	"os"
 	"testing"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 func TestDBUsers(t *testing.T) {
@@ -49,8 +51,8 @@ func TestDBUsers(t *testing.T) {
 		t.Errorf("Email in the DB ('%s') doesn't match the input text ('%s')", users[0].Email, user_email)
 	}
 
-	if users[0].Password != user_password {
-		t.Errorf("Password in the DB ('%s') doesn't match the input text ('%s')", users[0].Password, user_password)
+	if bcrypt.CompareHashAndPassword([]byte(users[0].Password), []byte(user_password)) != nil {
+		t.Errorf("Password hash in the DB ('%s') doesn't match the input text ('%s')", users[0].Password, user_password)
 	}
 
 	new_user_email := "admin@example.com"
@@ -75,7 +77,7 @@ func TestDBUsers(t *testing.T) {
 		t.Errorf("Email in the DB ('%s') doesn't match the input text ('%s')", users[1].Email, new_user_email)
 	}
 
-	if users[1].Password != new_user_password {
-		t.Errorf("Password in the DB ('%s') doesn't match the input text ('%s')", users[1].Password, new_user_password)
+	if bcrypt.CompareHashAndPassword([]byte(users[1].Password), []byte(new_user_password)) != nil {
+		t.Errorf("Password hash in the DB ('%s') doesn't match the input text ('%s')", users[1].Password, new_user_password)
 	}
 }
