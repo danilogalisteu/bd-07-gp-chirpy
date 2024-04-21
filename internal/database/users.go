@@ -26,6 +26,14 @@ func (db *DB) CreateUser(email string, password string) (User, error) {
 		return user, err
 	}
 
+	user, err = db.GetUserByEmail(email)
+	if err == nil {
+		return user, ErrUserExists
+	}
+	if err != ErrUserEmailNotFound {
+		return user, err
+	}
+
 	passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), 10)
 	if err != nil {
 		return user, err
@@ -75,6 +83,24 @@ func (db *DB) GetUserById(id int) (User, error) {
 	}
 
 	return user, ErrUserIdNotFound
+}
+
+// GetUserByEmail returns user from the database with given email
+func (db *DB) GetUserByEmail(email string) (User, error) {
+	user := User{}
+
+	users, err := db.GetUsers()
+	if err != nil {
+		return user, err
+	}
+
+	for _, user := range users {
+		if user.Email == email {
+			return user, nil
+		}
+	}
+
+	return user, ErrUserEmailNotFound
 }
 
 // ValidateUser checks that the combination of email and password hash is valid

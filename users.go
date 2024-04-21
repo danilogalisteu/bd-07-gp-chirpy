@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"internal/database"
 	"log"
 	"net/http"
 	"strconv"
@@ -28,6 +29,11 @@ func (cfg *apiConfig) postUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user, err := cfg.DB.CreateUser(params.Email, params.Password)
+	if err == database.ErrUserExists {
+		log.Printf("User already exists on DB:\n%v", err)
+		w.WriteHeader(403)
+		return
+	}
 	if err != nil {
 		log.Printf("Error creating user on DB:\n%v", err)
 		w.WriteHeader(500)
@@ -63,8 +69,8 @@ func (cfg *apiConfig) getUserById(w http.ResponseWriter, r *http.Request) {
 	user, err := cfg.DB.GetUserById(id)
 	if err == database.ErrUserIdNotFound {
 		respondWithError(w, 404, "ID was not found")
-			return
-		}
+		return
+	}
 	if err != nil {
 		log.Printf("Error getting user from DB:\n%v", err)
 		w.WriteHeader(500)
