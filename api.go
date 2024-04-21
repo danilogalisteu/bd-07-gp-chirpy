@@ -13,8 +13,11 @@ type apiConfig struct {
 	fileserverHits int
 }
 
-type parameters struct {
+type paramBody struct {
 	Body string `json:"body"`
+}
+type paramEmail struct {
+	Email string `json:"email"`
 }
 type returnError struct {
 	Error string `json:"error"`
@@ -97,7 +100,7 @@ func cleanMessage(msg string) string {
 
 func (db *DB) postChirp(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
-	params := parameters{}
+	params := paramBody{}
 	err := decoder.Decode(&params)
 	if err != nil {
 		log.Printf("Error decoding parameters: %s", err)
@@ -153,4 +156,22 @@ func (db *DB) getChirpById(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respondWithError(w, 404, "ID was not found")
+}
+
+func (db *DB) postUser(w http.ResponseWriter, r *http.Request) {
+	decoder := json.NewDecoder(r.Body)
+	params := paramEmail{}
+	err := decoder.Decode(&params)
+	if err != nil {
+		log.Printf("Error decoding parameters: %s", err)
+		w.WriteHeader(500)
+		return
+	}
+
+	user, err := db.CreateUser(params.Email)
+	if err != nil {
+		log.Printf("Error creating user on DB:\n%v", err)
+	}
+
+	respondWithJSON(w, 201, user)
 }
