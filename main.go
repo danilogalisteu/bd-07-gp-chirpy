@@ -36,6 +36,7 @@ func main() {
 	mux.HandleFunc("GET /api/reset", apiCfg.middlewareMetricsReset)
 	mux.HandleFunc("POST /api/chirps", db.postChirp)
 	mux.HandleFunc("GET /api/chirps", db.getChirps)
+	mux.HandleFunc("GET /api/chirps/{id}", db.getChirpById)
 
 	corsMux := middlewareCors(mux)
 	server := http.Server{

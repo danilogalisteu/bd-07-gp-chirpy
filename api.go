@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 )
 
@@ -126,4 +127,30 @@ func (db *DB) getChirps(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respondWithJSON(w, 200, chirps)
+}
+
+func (db *DB) getChirpById(w http.ResponseWriter, r *http.Request) {
+	chirps, err := db.GetChirps()
+	if err != nil {
+		log.Printf("Error getting items from DB:\n%v", err)
+		w.WriteHeader(500)
+		return
+	}
+
+	strId := r.PathValue("id")
+	id, err := strconv.Atoi(strId)
+	if err != nil {
+		log.Printf("Error converting requested id '%s' to number:\n%v", strId, err)
+		respondWithError(w, 400, "ID was not recognized as number")
+		return
+	}
+
+	for _, chirp := range chirps {
+		if chirp.ID == id {
+			respondWithJSON(w, 200, chirp)
+			return
+		}
+	}
+
+	respondWithError(w, 404, "ID was not found")
 }
