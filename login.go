@@ -53,11 +53,11 @@ func (cfg *apiConfig) postLogin(w http.ResponseWriter, r *http.Request) {
 
 	token := jwt.NewWithClaims(
 		jwt.SigningMethodHS256,
-		jwt.MapClaims{
-			"Issuer":    "chirpy",
-			"IssuedAt":  now,
-			"ExpiresAt": now.Add(time.Duration(expDuration) * time.Second),
-			"Subject":   strconv.Itoa(user.ID),
+		jwt.RegisteredClaims{
+			Issuer:    "chirpy",
+			IssuedAt:  jwt.NewNumericDate(now),
+			ExpiresAt: jwt.NewNumericDate(now.Add(time.Duration(expDuration) * time.Second)),
+			Subject:   strconv.Itoa(user.ID),
 		},
 	)
 	tokenString, err := token.SignedString([]byte(cfg.jwtSecret))
