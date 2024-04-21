@@ -94,7 +94,7 @@ func cleanMessage(msg string) string {
 	return strings.Join(clean, " ")
 }
 
-func postChirp(w http.ResponseWriter, r *http.Request) {
+func (db *DB) postChirp(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	params := parameters{}
 	err := decoder.Decode(&params)
@@ -109,12 +109,6 @@ func postChirp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fname := "database.json"
-	db, err := NewDB(fname)
-	if err != nil {
-		log.Printf("Error creating DB with file %s:\n%v", fname, err)
-	}
-
 	cleaned := cleanMessage(params.Body)
 
 	chirp, err := db.CreateChirp(cleaned)
@@ -125,13 +119,7 @@ func postChirp(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, 201, chirp)
 }
 
-func getChirps(w http.ResponseWriter, r *http.Request) {
-	fname := "database.json"
-	db, err := NewDB(fname)
-	if err != nil {
-		log.Printf("Error creating DB with file %s:\n%v", fname, err)
-	}
-
+func (db *DB) getChirps(w http.ResponseWriter, r *http.Request) {
 	chirps, err := db.GetChirps()
 	if err != nil {
 		log.Printf("Error getting items from DB:\n%v", err)

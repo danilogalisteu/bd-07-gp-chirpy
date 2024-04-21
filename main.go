@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 )
@@ -22,13 +23,19 @@ func middlewareCors(next http.Handler) http.Handler {
 func main() {
 	apiCfg := apiConfig{}
 
+	fname := "database.json"
+	db, err := NewDB(fname)
+	if err != nil {
+		log.Printf("Error creating DB with file %s:\n%v", fname, err)
+	}
+
 	mux := http.NewServeMux()
 	mux.Handle("GET /app/*", apiCfg.middlewareMetricsInc(http.StripPrefix("/app", http.FileServer(http.Dir(".")))))
 	mux.HandleFunc("GET /api/healthz", healthHandler)
 	mux.HandleFunc("GET /admin/metrics", apiCfg.middlewareMetricsCount)
 	mux.HandleFunc("GET /api/reset", apiCfg.middlewareMetricsReset)
-	mux.HandleFunc("POST /api/chirps", postChirp)
-	mux.HandleFunc("GET /api/chirps", getChirps)
+	mux.HandleFunc("POST /api/chirps", db.postChirp)
+	mux.HandleFunc("GET /api/chirps", db.getChirps)
 
 	corsMux := middlewareCors(mux)
 	server := http.Server{
@@ -36,7 +43,7 @@ func main() {
 		Handler: corsMux,
 	}
 
-	err := server.ListenAndServe()
+	err = server.ListenAndServe()
 	if err == http.ErrServerClosed {
 		fmt.Printf("server closed\n")
 	} else if err != nil {
