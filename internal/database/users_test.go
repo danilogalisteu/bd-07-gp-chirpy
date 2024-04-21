@@ -80,4 +80,24 @@ func TestDBUsers(t *testing.T) {
 	if bcrypt.CompareHashAndPassword([]byte(users[1].Password), []byte(new_user_password)) != nil {
 		t.Errorf("Password hash in the DB ('%s') doesn't match the input text ('%s')", users[1].Password, new_user_password)
 	}
+
+	user_id := 1
+	user, err = db.GetUserById(user_id)
+	if err != nil {
+		t.Fatalf("Error getting user with ID '%d' from DB:\n%v", user_id, err)
+	}
+
+	if user.ID != user_id {
+		t.Errorf("ID in the DB ('%d') doesn't match the input ID ('%d')", user.ID, user_id)
+	}
+
+	user, err = db.GetUserByEmail(user_email)
+	if err != nil {
+		t.Fatalf("Error getting user with email '%s' from DB:\n%v", user_email, err)
+	}
+
+	if user.Email != user_email {
+		t.Errorf("Email in the DB ('%s') doesn't match the input email ('%s')", user.Email, user_email)
+	}
+
 }
