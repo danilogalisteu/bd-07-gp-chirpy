@@ -2,12 +2,9 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"internal/database"
 	"log"
 	"net/http"
-	"strconv"
-	"strings"
 )
 
 type apiConfig struct {
@@ -15,50 +12,8 @@ type apiConfig struct {
 	DB             *database.DB
 }
 
-type paramBody struct {
-	Body string `json:"body"`
-}
-type paramEmail struct {
-	Email string `json:"email"`
-}
 type returnError struct {
 	Error string `json:"error"`
-}
-
-func healthHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("OK"))
-}
-
-func (cfg *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		cfg.fileserverHits++
-		next.ServeHTTP(w, r)
-	})
-}
-
-func (cfg *apiConfig) middlewareMetricsCount(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-
-	content := `<html>
-
-	<body>
-		<h1>Welcome, Chirpy Admin</h1>
-		<p>Chirpy has been visited %d times!</p>
-	</body>
-	
-	</html>`
-
-	w.Write([]byte(fmt.Sprintf(content, cfg.fileserverHits)))
-}
-
-func (cfg *apiConfig) middlewareMetricsReset(w http.ResponseWriter, r *http.Request) {
-	cfg.fileserverHits = 0
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("OK"))
 }
 
 func respondWithError(w http.ResponseWriter, code int, msg string) {
@@ -83,132 +38,4 @@ func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
 	w.Write(dat)
-}
-
-func cleanMessage(msg string) string {
-	profane := []string{"kerfuffle", "sharbert", "fornax"}
-	clean := make([]string, 0)
-	for _, word := range strings.Split(msg, " ") {
-		for _, pword := range profane {
-			if strings.ToLower(word) == pword {
-				word = "****"
-				break
-			}
-		}
-		clean = append(clean, word)
-	}
-	return strings.Join(clean, " ")
-}
-
-func (cfg *apiConfig) postChirp(w http.ResponseWriter, r *http.Request) {
-	decoder := json.NewDecoder(r.Body)
-	params := paramBody{}
-	err := decoder.Decode(&params)
-	if err != nil {
-		log.Printf("Error decoding parameters: %s", err)
-		w.WriteHeader(500)
-		return
-	}
-
-	if len(params.Body) > 140 {
-		respondWithError(w, 400, "Chirp is too long")
-		return
-	}
-
-	cleaned := cleanMessage(params.Body)
-
-	chirp, err := cfg.DB.CreateChirp(cleaned)
-	if err != nil {
-		log.Printf("Error creating chirp on DB:\n%v", err)
-	}
-
-	respondWithJSON(w, 201, chirp)
-}
-
-func (cfg *apiConfig) getChirps(w http.ResponseWriter, r *http.Request) {
-	chirps, err := cfg.DB.GetChirps()
-	if err != nil {
-		log.Printf("Error getting messages from DB:\n%v", err)
-	}
-
-	respondWithJSON(w, 200, chirps)
-}
-
-func (cfg *apiConfig) getChirpById(w http.ResponseWriter, r *http.Request) {
-	chirps, err := cfg.DB.GetChirps()
-	if err != nil {
-		log.Printf("Error getting items from DB:\n%v", err)
-		w.WriteHeader(500)
-		return
-	}
-
-	strId := r.PathValue("id")
-	id, err := strconv.Atoi(strId)
-	if err != nil {
-		log.Printf("Error converting requested id '%s' to number:\n%v", strId, err)
-		respondWithError(w, 400, "ID was not recognized as number")
-		return
-	}
-
-	for _, chirp := range chirps {
-		if chirp.ID == id {
-			respondWithJSON(w, 200, chirp)
-			return
-		}
-	}
-
-	respondWithError(w, 404, "ID was not found")
-}
-
-func (cfg *apiConfig) postUser(w http.ResponseWriter, r *http.Request) {
-	decoder := json.NewDecoder(r.Body)
-	params := paramEmail{}
-	err := decoder.Decode(&params)
-	if err != nil {
-		log.Printf("Error decoding parameters: %s", err)
-		w.WriteHeader(500)
-		return
-	}
-
-	user, err := cfg.DB.CreateUser(params.Email)
-	if err != nil {
-		log.Printf("Error creating user on DB:\n%v", err)
-	}
-
-	respondWithJSON(w, 201, user)
-}
-
-func (cfg *apiConfig) getUsers(w http.ResponseWriter, r *http.Request) {
-	users, err := cfg.DB.GetUsers()
-	if err != nil {
-		log.Printf("Error getting users from DB:\n%v", err)
-	}
-
-	respondWithJSON(w, 200, users)
-}
-
-func (cfg *apiConfig) getUserById(w http.ResponseWriter, r *http.Request) {
-	users, err := cfg.DB.GetUsers()
-	if err != nil {
-		log.Printf("Error getting users from DB:\n%v", err)
-		w.WriteHeader(500)
-		return
-	}
-
-	strId := r.PathValue("id")
-	id, err := strconv.Atoi(strId)
-	if err != nil {
-		log.Printf("Error converting requested id '%s' to number:\n%v", strId, err)
-		respondWithError(w, 400, "ID was not recognized as number")
-		return
-	}
-
-	for _, user := range users {
-		if user.ID == id {
-			respondWithJSON(w, 200, user)
-			return
-		}
-	}
-
-	respondWithError(w, 404, "ID was not found")
 }
