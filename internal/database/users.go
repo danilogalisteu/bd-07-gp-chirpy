@@ -12,6 +12,11 @@ type User struct {
 	Password string `json:"password"`
 }
 
+var ErrUserExists = errors.New("user already exists")
+var ErrUserIdNotFound = errors.New("user id was not found")
+var ErrUserEmailNotFound = errors.New("user email was not found")
+var ErrUserInfoNotValid = errors.New("user info is not valid")
+
 // CreateUser creates a new user and saves it to disk
 func (db *DB) CreateUser(email string, password string) (User, error) {
 	user := User{}
@@ -72,5 +77,5 @@ func (db *DB) ValidateUser(email string, password string) (User, error) {
 		}
 	}
 
-	return user, errors.New("user is not valid")
+	return user, ErrUserInfoNotValid
 }
