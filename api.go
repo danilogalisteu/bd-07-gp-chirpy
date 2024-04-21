@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"internal/database"
 	"log"
 	"net/http"
 	"strconv"
@@ -11,6 +12,7 @@ import (
 
 type apiConfig struct {
 	fileserverHits int
+	DB             *database.DB
 }
 
 type paramBody struct {
@@ -98,7 +100,7 @@ func cleanMessage(msg string) string {
 	return strings.Join(clean, " ")
 }
 
-func (db *DB) postChirp(w http.ResponseWriter, r *http.Request) {
+func (cfg *apiConfig) postChirp(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	params := paramBody{}
 	err := decoder.Decode(&params)
@@ -115,7 +117,7 @@ func (db *DB) postChirp(w http.ResponseWriter, r *http.Request) {
 
 	cleaned := cleanMessage(params.Body)
 
-	chirp, err := db.CreateChirp(cleaned)
+	chirp, err := cfg.DB.CreateChirp(cleaned)
 	if err != nil {
 		log.Printf("Error creating chirp on DB:\n%v", err)
 	}
@@ -123,8 +125,8 @@ func (db *DB) postChirp(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, 201, chirp)
 }
 
-func (db *DB) getChirps(w http.ResponseWriter, r *http.Request) {
-	chirps, err := db.GetChirps()
+func (cfg *apiConfig) getChirps(w http.ResponseWriter, r *http.Request) {
+	chirps, err := cfg.DB.GetChirps()
 	if err != nil {
 		log.Printf("Error getting messages from DB:\n%v", err)
 	}
@@ -132,8 +134,8 @@ func (db *DB) getChirps(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, 200, chirps)
 }
 
-func (db *DB) getChirpById(w http.ResponseWriter, r *http.Request) {
-	chirps, err := db.GetChirps()
+func (cfg *apiConfig) getChirpById(w http.ResponseWriter, r *http.Request) {
+	chirps, err := cfg.DB.GetChirps()
 	if err != nil {
 		log.Printf("Error getting items from DB:\n%v", err)
 		w.WriteHeader(500)
@@ -158,7 +160,7 @@ func (db *DB) getChirpById(w http.ResponseWriter, r *http.Request) {
 	respondWithError(w, 404, "ID was not found")
 }
 
-func (db *DB) postUser(w http.ResponseWriter, r *http.Request) {
+func (cfg *apiConfig) postUser(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	params := paramEmail{}
 	err := decoder.Decode(&params)
@@ -168,7 +170,7 @@ func (db *DB) postUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := db.CreateUser(params.Email)
+	user, err := cfg.DB.CreateUser(params.Email)
 	if err != nil {
 		log.Printf("Error creating user on DB:\n%v", err)
 	}
@@ -176,8 +178,8 @@ func (db *DB) postUser(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, 201, user)
 }
 
-func (db *DB) getUsers(w http.ResponseWriter, r *http.Request) {
-	users, err := db.GetUsers()
+func (cfg *apiConfig) getUsers(w http.ResponseWriter, r *http.Request) {
+	users, err := cfg.DB.GetUsers()
 	if err != nil {
 		log.Printf("Error getting users from DB:\n%v", err)
 	}
@@ -185,8 +187,8 @@ func (db *DB) getUsers(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, 200, users)
 }
 
-func (db *DB) getUserById(w http.ResponseWriter, r *http.Request) {
-	users, err := db.GetUsers()
+func (cfg *apiConfig) getUserById(w http.ResponseWriter, r *http.Request) {
+	users, err := cfg.DB.GetUsers()
 	if err != nil {
 		log.Printf("Error getting users from DB:\n%v", err)
 		w.WriteHeader(500)

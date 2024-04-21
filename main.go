@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"internal/database"
 	"log"
 	"net/http"
 	"os"
@@ -24,8 +25,6 @@ func main() {
 	dbg := flag.Bool("debug", false, "Enable debug mode")
 	flag.Parse()
 
-	apiCfg := apiConfig{}
-
 	fname := "database.json"
 	if *dbg {
 		err := os.Remove(fname)
@@ -33,9 +32,14 @@ func main() {
 			log.Printf("Error removing DB file %s:\n%v", fname, err)
 		}
 	}
-	db, err := NewDB(fname)
+	db, err := database.NewDB(fname)
 	if err != nil {
 		log.Printf("Error creating DB with file %s:\n%v", fname, err)
+	}
+
+	apiCfg := apiConfig{
+		fileserverHits: 0,
+		DB: db,
 	}
 
 	mux := http.NewServeMux()
@@ -43,12 +47,12 @@ func main() {
 	mux.HandleFunc("GET /api/healthz", healthHandler)
 	mux.HandleFunc("GET /admin/metrics", apiCfg.middlewareMetricsCount)
 	mux.HandleFunc("GET /api/reset", apiCfg.middlewareMetricsReset)
-	mux.HandleFunc("POST /api/chirps", db.postChirp)
-	mux.HandleFunc("GET /api/chirps", db.getChirps)
-	mux.HandleFunc("GET /api/chirps/{id}", db.getChirpById)
-	mux.HandleFunc("POST /api/users", db.postUser)
-	mux.HandleFunc("GET /api/users", db.getUsers)
-	mux.HandleFunc("GET /api/users/{id}", db.getUserById)
+	mux.HandleFunc("POST /api/chirps", apiCfg.postChirp)
+	mux.HandleFunc("GET /api/chirps", apiCfg.getChirps)
+	mux.HandleFunc("GET /api/chirps/{id}", apiCfg.getChirpById)
+	mux.HandleFunc("POST /api/users", apiCfg.postUser)
+	mux.HandleFunc("GET /api/users", apiCfg.getUsers)
+	mux.HandleFunc("GET /api/users/{id}", apiCfg.getUserById)
 
 	corsMux := middlewareCors(mux)
 	server := http.Server{

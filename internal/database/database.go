@@ -1,4 +1,4 @@
-package main
+package database
 
 import (
 	"encoding/json"
@@ -29,9 +29,9 @@ type DBStructure struct {
 // NewDB creates a new database connection
 // and creates the database file if it doesn't exist
 func NewDB(path string) (*DB, error) {
-	db := DB{path: path, mux: &sync.RWMutex{}}
+	db := &DB{path: path, mux: &sync.RWMutex{}}
 	err := db.ensureDB()
-	return &db, err
+	return db, err
 }
 
 // CreateChirp creates a new chirp and saves it to disk
