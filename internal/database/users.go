@@ -69,11 +69,9 @@ func (db *DB) GetUsers() ([]User, error) {
 
 // GetUserById returns user from the database with given id
 func (db *DB) GetUserById(id int) (User, error) {
-	user := User{}
-
 	users, err := db.GetUsers()
 	if err != nil {
-		return user, err
+		return User{}, err
 	}
 
 	for _, user := range users {
@@ -82,16 +80,14 @@ func (db *DB) GetUserById(id int) (User, error) {
 		}
 	}
 
-	return user, ErrUserIdNotFound
+	return User{}, ErrUserIdNotFound
 }
 
 // GetUserByEmail returns user from the database with given email
 func (db *DB) GetUserByEmail(email string) (User, error) {
-	user := User{}
-
 	users, err := db.GetUsers()
 	if err != nil {
-		return user, err
+		return User{}, err
 	}
 
 	for _, user := range users {
@@ -100,16 +96,14 @@ func (db *DB) GetUserByEmail(email string) (User, error) {
 		}
 	}
 
-	return user, ErrUserEmailNotFound
+	return User{}, ErrUserEmailNotFound
 }
 
 // ValidateUser checks that the combination of email and password hash is valid
 func (db *DB) ValidateUser(email string, password string) (User, error) {
-	user := User{}
-
 	dbStructure, err := db.loadDB()
 	if err != nil {
-		return user, err
+		return User{}, err
 	}
 
 	for _, user := range dbStructure.Users {
@@ -121,5 +115,5 @@ func (db *DB) ValidateUser(email string, password string) (User, error) {
 		}
 	}
 
-	return user, ErrUserInfoNotValid
+	return User{}, ErrUserInfoNotValid
 }
