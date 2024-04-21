@@ -126,7 +126,7 @@ func (db *DB) postChirp(w http.ResponseWriter, r *http.Request) {
 func (db *DB) getChirps(w http.ResponseWriter, r *http.Request) {
 	chirps, err := db.GetChirps()
 	if err != nil {
-		log.Printf("Error getting items from DB:\n%v", err)
+		log.Printf("Error getting messages from DB:\n%v", err)
 	}
 
 	respondWithJSON(w, 200, chirps)
@@ -174,4 +174,39 @@ func (db *DB) postUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respondWithJSON(w, 201, user)
+}
+
+func (db *DB) getUsers(w http.ResponseWriter, r *http.Request) {
+	users, err := db.GetUsers()
+	if err != nil {
+		log.Printf("Error getting users from DB:\n%v", err)
+	}
+
+	respondWithJSON(w, 200, users)
+}
+
+func (db *DB) getUserById(w http.ResponseWriter, r *http.Request) {
+	users, err := db.GetUsers()
+	if err != nil {
+		log.Printf("Error getting users from DB:\n%v", err)
+		w.WriteHeader(500)
+		return
+	}
+
+	strId := r.PathValue("id")
+	id, err := strconv.Atoi(strId)
+	if err != nil {
+		log.Printf("Error converting requested id '%s' to number:\n%v", strId, err)
+		respondWithError(w, 400, "ID was not recognized as number")
+		return
+	}
+
+	for _, user := range users {
+		if user.ID == id {
+			respondWithJSON(w, 200, user)
+			return
+		}
+	}
+
+	respondWithError(w, 404, "ID was not found")
 }
