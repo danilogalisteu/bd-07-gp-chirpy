@@ -53,3 +53,24 @@ func (db *DB) GetUsers() ([]User, error) {
 
 	return users, nil
 }
+
+// ValidateUser checks that the combination of email and password hash is valid
+func (db *DB) ValidateUser(email string, password string) (User, error) {
+	user := User{}
+
+	dbStructure, err := db.loadDB()
+	if err != nil {
+		return user, err
+	}
+
+	for _, user := range dbStructure.Users {
+		if user.Email == email {
+			err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+			if err == nil {
+				return user, nil
+			}
+		}
+	}
+
+	return user, errors.New("user is not valid")
+}
