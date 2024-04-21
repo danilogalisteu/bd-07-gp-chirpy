@@ -6,6 +6,9 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
+
+	"github.com/golang-jwt/jwt/v5"
 )
 
 type paramUser struct {
@@ -73,6 +76,61 @@ func (cfg *apiConfig) getUserById(w http.ResponseWriter, r *http.Request) {
 	}
 	if err != nil {
 		log.Printf("Error getting user from DB:\n%v", err)
+		w.WriteHeader(500)
+		return
+	}
+
+	respondWithJSON(w, 200, BasicUser{ID: user.ID, Email: user.Email})
+}
+
+func (cfg *apiConfig) putUser(w http.ResponseWriter, r *http.Request) {
+	decoder := json.NewDecoder(r.Body)
+	params := paramUser{}
+	err := decoder.Decode(&params)
+	if err != nil {
+		log.Printf("Error decoding parameters: %s", err)
+		w.WriteHeader(500)
+		return
+	}
+
+	tokenString := strings.Replace(r.Header.Get("Authorization"), "Bearer ", "", 1)
+
+	token, err := jwt.ParseWithClaims(tokenString, &jwt.RegisteredClaims{}, func(token *jwt.Token) (interface{}, error) {
+		return []byte(cfg.jwtSecret), nil
+	})
+	if err != nil {
+		log.Printf("Invalid token parsing:\n%v", err)
+		w.WriteHeader(401)
+		return
+	}
+	if !token.Valid {
+		log.Printf("Invalid token")
+		w.WriteHeader(401)
+		return
+	}
+
+	claims, ok := token.Claims.(*jwt.RegisteredClaims)
+	if !ok {
+		log.Printf("Unable to extract token claims:\n%v", err)
+		w.WriteHeader(401)
+		return
+	}
+
+	id, err := strconv.Atoi(claims.Subject)
+	if err != nil {
+		log.Printf("Invalid token ID value:\n%v", err)
+		w.WriteHeader(401)
+		return
+	}
+
+	user, err := cfg.DB.UpdateUser(id, params.Email, params.Password)
+	if err == database.ErrUserIdNotFound {
+		log.Printf("ID was not found:\n%v", err)
+		w.WriteHeader(404)
+		return
+	}
+	if err != nil {
+		log.Printf("Error updating user on DB:\n%v", err)
 		w.WriteHeader(500)
 		return
 	}
