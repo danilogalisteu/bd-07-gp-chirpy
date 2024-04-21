@@ -6,6 +6,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+
+	"github.com/joho/godotenv"
 )
 
 func middlewareCors(next http.Handler) http.Handler {
@@ -41,7 +43,15 @@ func main() {
 		log.Printf("Error creating DB with file '%s':\n%v", fname, err)
 	}
 
+	err = godotenv.Load()
+	if err != nil {
+		log.Println("Error loading '.env' file")
+	}
+
+	jwtSecret := os.Getenv("JWT_SECRET")
+
 	apiCfg := apiConfig{
+		jwtSecret: jwtSecret,
 		fileserverHits: 0,
 		DB:             db,
 	}

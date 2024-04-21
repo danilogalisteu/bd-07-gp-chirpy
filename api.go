@@ -8,6 +8,7 @@ import (
 )
 
 type apiConfig struct {
+	jwtSecret      string
 	fileserverHits int
 	DB             *database.DB
 }
