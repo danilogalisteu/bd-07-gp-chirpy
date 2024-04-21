@@ -59,6 +59,24 @@ func (db *DB) GetUsers() ([]User, error) {
 	return users, nil
 }
 
+// GetUserById returns user from the database with given id
+func (db *DB) GetUserById(id int) (User, error) {
+	user := User{}
+
+	users, err := db.GetUsers()
+	if err != nil {
+		return user, err
+	}
+
+	for _, user := range users {
+		if user.ID == id {
+			return user, nil
+		}
+	}
+
+	return user, ErrUserIdNotFound
+}
+
 // ValidateUser checks that the combination of email and password hash is valid
 func (db *DB) ValidateUser(email string, password string) (User, error) {
 	user := User{}

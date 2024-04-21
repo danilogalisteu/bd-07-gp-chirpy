@@ -52,13 +52,6 @@ func (cfg *apiConfig) getUsers(w http.ResponseWriter, r *http.Request) {
 }
 
 func (cfg *apiConfig) getUserById(w http.ResponseWriter, r *http.Request) {
-	users, err := cfg.DB.GetUsers()
-	if err != nil {
-		log.Printf("Error getting users from DB:\n%v", err)
-		w.WriteHeader(500)
-		return
-	}
-
 	strId := r.PathValue("id")
 	id, err := strconv.Atoi(strId)
 	if err != nil {
@@ -67,12 +60,16 @@ func (cfg *apiConfig) getUserById(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	for _, user := range users {
-		if user.ID == id {
-			respondWithJSON(w, 200, BasicUser{ID: user.ID, Email: user.Email})
+	user, err := cfg.DB.GetUserById(id)
+	if err == database.ErrUserIdNotFound {
+		respondWithError(w, 404, "ID was not found")
 			return
 		}
+	if err != nil {
+		log.Printf("Error getting user from DB:\n%v", err)
+		w.WriteHeader(500)
+		return
 	}
 
-	respondWithError(w, 404, "ID was not found")
+	respondWithJSON(w, 200, BasicUser{ID: user.ID, Email: user.Email})
 }
