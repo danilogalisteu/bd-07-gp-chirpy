@@ -100,4 +100,27 @@ func TestDBUsers(t *testing.T) {
 		t.Errorf("Email in the DB ('%s') doesn't match the input email ('%s')", user.Email, user_email)
 	}
 
+	updated_user_email := "contact@example.com"
+	user, err = db.UpdateUser(user_id, updated_user_email, "")
+	if err != nil {
+		t.Fatalf("Error updating user user with ID '%d' from DB:\n%v", user_id, err)
+	}
+
+	if user.Email != updated_user_email {
+		t.Errorf("Email in the DB ('%s') doesn't match the updated email ('%s')", user.Email, updated_user_email)
+	}
+
+	if bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(user_password)) != nil {
+		t.Errorf("Password in the DB ('%s') doesn't match the original password ('%s')", user.Password, user_password)
+	}
+
+	updated_user_password := "012345"
+	user, err = db.UpdateUser(user_id, "", updated_user_password)
+	if err != nil {
+		t.Fatalf("Error updating user user with ID '%d' from DB:\n%v", user_id, err)
+	}
+
+	if bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(updated_user_password)) != nil {
+		t.Errorf("Password in the DB ('%s') doesn't match the updated password ('%s')", user.Password, updated_user_password)
+	}
 }

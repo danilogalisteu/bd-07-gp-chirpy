@@ -106,10 +106,43 @@ func (db *DB) ValidateUser(email string, password string) (User, error) {
 		return User{}, err
 	}
 
-			err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
-			if err == nil {
-				return user, nil
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+	if err == nil {
+		return user, nil
 	}
 
 	return User{}, ErrUserInfoNotValid
+}
+
+// UpdateUser updates email and password for an existing user
+func (db *DB) UpdateUser(id int, email string, password string) (User, error) {
+	user, err := db.GetUserById(id)
+	if err == ErrUserIdNotFound {
+		return User{}, ErrUserIdNotFound
+	}
+	if err != nil {
+		return User{}, err
+	}
+
+	dbStructure, err := db.loadDB()
+	if err != nil {
+		return User{}, err
+	}
+
+	if email != "" {
+		user.Email = email
+	}
+	if password != "" {
+		passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), 10)
+		if err != nil {
+			return user, err
+		}
+		user.Password = string(passwordHash)
+	}
+
+	dbStructure.Users[id] = user
+
+	err = db.writeDB(dbStructure)
+
+	return user, err
 }
