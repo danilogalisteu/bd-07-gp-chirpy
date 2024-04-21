@@ -51,7 +51,7 @@ func (cfg *apiConfig) postLogin(w http.ResponseWriter, r *http.Request) {
 		expDuration = min(24*3600, params.ExpiresInSeconds)
 	}
 
-	token, err := jwt.NewWithClaims(
+	token := jwt.NewWithClaims(
 		jwt.SigningMethodHS256,
 		jwt.MapClaims{
 			"Issuer":    "chirpy",
@@ -59,12 +59,13 @@ func (cfg *apiConfig) postLogin(w http.ResponseWriter, r *http.Request) {
 			"ExpiresAt": now.Add(time.Duration(expDuration) * time.Second),
 			"Subject":   strconv.Itoa(user.ID),
 		},
-	).SignedString([]byte(cfg.jwtSecret))
+	)
+	tokenString, err := token.SignedString([]byte(cfg.jwtSecret))
 	if err != nil {
 		log.Printf("Error creating auth token:\n%v", err)
 		w.WriteHeader(500)
 		return
 	}
 
-	respondWithJSON(w, 200, responseAuth{ID: user.ID, Email: user.Email, Token: token})
+	respondWithJSON(w, 200, responseAuth{ID: user.ID, Email: user.Email, Token: tokenString})
 }
