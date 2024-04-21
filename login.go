@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"internal/database"
 	"log"
 	"net/http"
 	"strconv"
@@ -33,9 +34,14 @@ func (cfg *apiConfig) postLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user, err := cfg.DB.ValidateUser(params.Email, params.Password)
-	if err != nil {
-		log.Printf("Error validating user on DB:\n%v", err)
+	if (err == database.ErrUserEmailNotFound) || (err == database.ErrUserInfoNotValid) {
+		log.Printf("Logical error validating user on DB:\n%v", err)
 		w.WriteHeader(401)
+		return
+	}
+	if err != nil {
+		log.Printf("Server error validating user on DB:\n%v", err)
+		w.WriteHeader(500)
 		return
 	}
 
