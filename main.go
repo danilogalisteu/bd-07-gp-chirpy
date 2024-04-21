@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"flag"
 	"log"
 	"net/http"
 	"os"
@@ -21,9 +21,18 @@ func middlewareCors(next http.Handler) http.Handler {
 }
 
 func main() {
+	dbg := flag.Bool("debug", false, "Enable debug mode")
+	flag.Parse()
+
 	apiCfg := apiConfig{}
 
 	fname := "database.json"
+	if *dbg {
+		err := os.Remove(fname)
+		if err != nil {
+			log.Printf("Error removing DB file %s:\n%v", fname, err)
+		}
+	}
 	db, err := NewDB(fname)
 	if err != nil {
 		log.Printf("Error creating DB with file %s:\n%v", fname, err)
@@ -47,9 +56,9 @@ func main() {
 
 	err = server.ListenAndServe()
 	if err == http.ErrServerClosed {
-		fmt.Printf("server closed\n")
+		log.Printf("server closed\n")
 	} else if err != nil {
-		fmt.Printf("error starting server: %s\n", err)
+		log.Printf("error starting server: %s\n", err)
 		os.Exit(1)
 	}
 }
