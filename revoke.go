@@ -6,11 +6,7 @@ import (
 	"strings"
 )
 
-type responseRefresh struct {
-	Token string `json:"token"`
-}
-
-func (cfg *apiConfig) postRefresh(w http.ResponseWriter, r *http.Request) {
+func (cfg *apiConfig) postRevoke(w http.ResponseWriter, r *http.Request) {
 	tokenString := strings.Replace(r.Header.Get("Authorization"), "Bearer ", "", 1)
 
 	claims, err := validateToken(cfg.jwtSecret, tokenString)
@@ -36,14 +32,7 @@ func (cfg *apiConfig) postRefresh(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO check if revoked
+	// TODO revoke token
 
-	acessTokenString, err := generateToken(cfg.jwtSecret, "chirpy-access", claims.Subject, 3600)
-	if err != nil {
-		log.Printf("Error creating access token:\n%v", err)
-		w.WriteHeader(500)
-		return
-	}
-
-	respondWithJSON(w, 200, responseRefresh{Token: acessTokenString})
+	w.WriteHeader(200)
 }
