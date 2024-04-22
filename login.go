@@ -56,5 +56,7 @@ func (cfg *apiConfig) postLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// TODO register token
+
 	respondWithJSON(w, 200, responseAuth{ID: user.ID, Email: user.Email, Token: acessTokenString, RefreshToken: refreshTokenString})
 }

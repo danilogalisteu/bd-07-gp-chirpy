@@ -36,7 +36,7 @@ func (cfg *apiConfig) postRefresh(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO check if revoked
+	// TODO check token status
 
 	acessTokenString, err := generateToken(cfg.jwtSecret, "chirpy-access", claims.Subject, 3600)
 	if err != nil {
