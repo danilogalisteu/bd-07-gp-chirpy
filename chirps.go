@@ -5,6 +5,7 @@ import (
 	"internal/database"
 	"log"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -71,13 +72,18 @@ func (cfg *apiConfig) postChirp(w http.ResponseWriter, r *http.Request) {
 
 func (cfg *apiConfig) getChirps(w http.ResponseWriter, r *http.Request) {
 	strAuthorId := r.URL.Query().Get("author_id")
+	sortAsc := r.URL.Query().Get("sort") != "desc"
 
 	if strAuthorId == "" {
 		chirps, err := cfg.DB.GetChirps()
 		if err != nil {
 			log.Printf("Error getting messages from DB:\n%v", err)
 		}
-
+		if sortAsc {
+			sort.Slice(chirps, func(i, j int) bool { return chirps[i].ID < chirps[j].ID })
+		} else {
+			sort.Slice(chirps, func(i, j int) bool { return chirps[i].ID > chirps[j].ID })
+		}
 		respondWithJSON(w, 200, chirps)
 	} else {
 		authorId, err := strconv.Atoi(strAuthorId)
@@ -92,7 +98,11 @@ func (cfg *apiConfig) getChirps(w http.ResponseWriter, r *http.Request) {
 			log.Printf("Error getting messages from DB:\n%v", err)
 			w.WriteHeader(500)
 		}
-
+		if sortAsc {
+			sort.Slice(chirps, func(i, j int) bool { return chirps[i].ID < chirps[j].ID })
+		} else {
+			sort.Slice(chirps, func(i, j int) bool { return chirps[i].ID > chirps[j].ID })
+		}
 		respondWithJSON(w, 200, chirps)
 	}
 }
