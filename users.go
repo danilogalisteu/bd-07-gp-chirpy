@@ -93,15 +93,9 @@ func (cfg *apiConfig) putUser(w http.ResponseWriter, r *http.Request) {
 
 	tokenString := strings.Replace(r.Header.Get("Authorization"), "Bearer ", "", 1)
 
-	claims, err := validateToken(cfg.jwtSecret, tokenString)
+	claims, err := validateToken(cfg.jwtSecret, tokenString, "chirpy-access")
 	if err != nil {
 		log.Printf("Token validation error:\n%v", err)
-		w.WriteHeader(401)
-		return
-	}
-
-	if claims.Issuer != "chirpy-access" {
-		log.Printf("Invalid token type: %s", claims.Issuer)
 		w.WriteHeader(401)
 		return
 	}

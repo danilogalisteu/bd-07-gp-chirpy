@@ -11,6 +11,7 @@ var ErrTokenEmpty = errors.New("token string empty")
 var ErrTokenParsing = errors.New("token parsing failed")
 var ErrTokenInvalid = errors.New("invalid token")
 var ErrTokenClaimsParsing = errors.New("token claims parsing failed")
+var ErrTokenIssuer = errors.New("token issuer invalid")
 
 func generateToken(secret string, issuer string, subject string, expires_in_seconds int) (string, error) {
 	now := time.Now()
@@ -32,7 +33,7 @@ func generateToken(secret string, issuer string, subject string, expires_in_seco
 	return tokenString, nil
 }
 
-func validateToken(secret string, tokenString string) (*jwt.RegisteredClaims, error) {
+func validateToken(secret string, tokenString string, issuer string) (*jwt.RegisteredClaims, error) {
 	if tokenString == "" {
 		return nil, ErrTokenEmpty
 	}
@@ -50,6 +51,10 @@ func validateToken(secret string, tokenString string) (*jwt.RegisteredClaims, er
 	claims, ok := token.Claims.(*jwt.RegisteredClaims)
 	if !ok {
 		return nil, ErrTokenClaimsParsing
+	}
+
+	if claims.Issuer != issuer {
+		return nil, ErrTokenIssuer
 	}
 
 	return claims, nil
