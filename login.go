@@ -59,9 +59,11 @@ func (cfg *apiConfig) postLogin(w http.ResponseWriter, r *http.Request) {
 
 	err = cfg.DB.CreateToken(refreshTokenString)
 	if err != nil {
-		log.Printf("Error storing refresh token:\n%v", err)
-		w.WriteHeader(500)
-		return
+		if err != database.ErrTokenExists { // possible collision because of 1 second precision
+			log.Printf("Error storing refresh token:\n%v", err)
+			w.WriteHeader(500)
+			return
+		}
 	}
 
 	respondWithJSON(w, 200, responseAuth{ID: user.ID, Email: user.Email, IsChirpyRed: user.IsChirpyRed, Token: acessTokenString, RefreshToken: refreshTokenString})
