@@ -99,18 +99,8 @@ func (cfg *apiConfig) putUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	claims, err := validateToken(cfg.jwtSecret, tokenString)
-	if err == ErrTokenParsing {
-		log.Printf("Invalid token parsing:\n%v", err)
-		w.WriteHeader(401)
-		return
-	}
-	if err == ErrTokenInvalid {
-		log.Printf("Invalid token")
-		w.WriteHeader(401)
-		return
-	}
-	if err == ErrTokenClaimsParsing {
-		log.Printf("Unable to extract token claims:\n%v", err)
+	if err != nil {
+		log.Printf("Token validation error:\n%v", err)
 		w.WriteHeader(401)
 		return
 	}
