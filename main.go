@@ -48,10 +48,9 @@ func main() {
 		log.Println("Error loading '.env' file")
 	}
 
-	jwtSecret := os.Getenv("JWT_SECRET")
-
 	apiCfg := apiConfig{
-		jwtSecret: jwtSecret,
+		jwtSecret:      os.Getenv("JWT_SECRET"),
+		polkaApiKey:    os.Getenv("POLKA_API_KEY"),
 		fileserverHits: 0,
 		DB:             db,
 	}

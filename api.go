@@ -9,6 +9,7 @@ import (
 
 type apiConfig struct {
 	jwtSecret      string
+	polkaApiKey    string
 	fileserverHits int
 	DB             *database.DB
 }
