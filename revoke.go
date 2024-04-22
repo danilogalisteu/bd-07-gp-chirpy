@@ -8,6 +8,11 @@ import (
 
 func (cfg *apiConfig) postRevoke(w http.ResponseWriter, r *http.Request) {
 	tokenString := strings.Replace(r.Header.Get("Authorization"), "Bearer ", "", 1)
+	if tokenString == "" {
+		log.Printf("Token not provided in header")
+		w.WriteHeader(401)
+		return
+	}
 
 	claims, err := validateToken(cfg.jwtSecret, tokenString)
 	if err == ErrTokenParsing {
