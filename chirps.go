@@ -37,6 +37,38 @@ func (cfg *apiConfig) postChirp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	tokenString := strings.Replace(r.Header.Get("Authorization"), "Bearer ", "", 1)
+
+	claims, err := validateToken(cfg.jwtSecret, tokenString)
+	if err == ErrTokenParsing {
+		log.Printf("Invalid token parsing:\n%v", err)
+		w.WriteHeader(401)
+		return
+	}
+	if err == ErrTokenInvalid {
+		log.Printf("Invalid token")
+		w.WriteHeader(401)
+		return
+	}
+	if err == ErrTokenClaimsParsing {
+		log.Printf("Unable to extract token claims:\n%v", err)
+		w.WriteHeader(401)
+		return
+	}
+
+	id, err := strconv.Atoi(claims.Subject)
+	if err != nil {
+		log.Printf("Invalid token ID value:\n%v", err)
+		w.WriteHeader(401)
+		return
+	}
+
+	if claims.Issuer != "chirpy-access" {
+		log.Printf("Invalid token type:\n%v", err)
+		w.WriteHeader(401)
+		return
+	}
+
 	if len(params.Body) > 140 {
 		respondWithError(w, 400, "Chirp is too long")
 		return
@@ -44,7 +76,7 @@ func (cfg *apiConfig) postChirp(w http.ResponseWriter, r *http.Request) {
 
 	cleaned := cleanMessage(params.Body)
 
-	chirp, err := cfg.DB.CreateChirp(cleaned)
+	chirp, err := cfg.DB.CreateChirp(id, cleaned)
 	if err != nil {
 		log.Printf("Error creating chirp on DB:\n%v", err)
 	}
