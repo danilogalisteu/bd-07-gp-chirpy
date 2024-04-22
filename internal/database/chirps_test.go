@@ -27,8 +27,9 @@ func TestDBChirps(t *testing.T) {
 		t.Errorf("The messages array should have zero length instead of %d", len(chirps))
 	}
 
+	chirp_author_id := 1
 	chirp_text := "test chirp"
-	chirp, err := db.CreateChirp(chirp_text)
+	chirp, err := db.CreateChirp(chirp_author_id, chirp_text)
 	if err != nil {
 		t.Errorf("Error creating chirp on DB:\n%v", err)
 	}
@@ -49,7 +50,7 @@ func TestDBChirps(t *testing.T) {
 	}
 
 	new_chirp_text := "new test chirp"
-	chirp, err = db.CreateChirp(new_chirp_text)
+	chirp, err = db.CreateChirp(chirp_author_id, new_chirp_text)
 	if err != nil {
 		t.Errorf("Error creating message on DB:\n%v", err)
 	}
