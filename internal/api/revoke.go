@@ -1,4 +1,4 @@
-package main
+package api
 
 import (
 	"log"
@@ -6,10 +6,10 @@ import (
 	"strings"
 )
 
-func (cfg *apiConfig) postRevoke(w http.ResponseWriter, r *http.Request) {
+func (cfg *ApiConfig) PostRevoke(w http.ResponseWriter, r *http.Request) {
 	tokenString := strings.Replace(r.Header.Get("Authorization"), "Bearer ", "", 1)
 
-	_, err := validateToken(cfg.jwtSecret, tokenString, "chirpy-refresh")
+	_, err := validateToken(cfg.JwtSecret, tokenString, "chirpy-refresh")
 	if err != nil {
 		log.Printf("Token validation error:\n%v", err)
 		w.WriteHeader(http.StatusUnauthorized)

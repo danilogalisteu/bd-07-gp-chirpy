@@ -1,18 +1,18 @@
-package main
+package api
 
 import (
 	"fmt"
 	"net/http"
 )
 
-func (cfg *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler {
+func (cfg *ApiConfig) MiddlewareMetricsInc(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		cfg.fileserverHits++
+		cfg.FileserverHits++
 		next.ServeHTTP(w, r)
 	})
 }
 
-func (cfg *apiConfig) middlewareMetricsCount(w http.ResponseWriter, r *http.Request) {
+func (cfg *ApiConfig) MiddlewareMetricsCount(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 
@@ -25,11 +25,11 @@ func (cfg *apiConfig) middlewareMetricsCount(w http.ResponseWriter, r *http.Requ
 	
 	</html>`
 
-	w.Write([]byte(fmt.Sprintf(content, cfg.fileserverHits)))
+	w.Write([]byte(fmt.Sprintf(content, cfg.FileserverHits)))
 }
 
-func (cfg *apiConfig) middlewareMetricsReset(w http.ResponseWriter, r *http.Request) {
-	cfg.fileserverHits = 0
+func (cfg *ApiConfig) MiddlewareMetricsReset(w http.ResponseWriter, r *http.Request) {
+	cfg.FileserverHits = 0
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("OK"))

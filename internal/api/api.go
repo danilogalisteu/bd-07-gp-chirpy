@@ -1,4 +1,4 @@
-package main
+package api
 
 import (
 	"encoding/json"
@@ -7,10 +7,10 @@ import (
 	"net/http"
 )
 
-type apiConfig struct {
-	jwtSecret      string
-	polkaApiKey    string
-	fileserverHits int
+type ApiConfig struct {
+	JwtSecret      string
+	PolkaApiKey    string
+	FileserverHits int
 	DB             *database.DB
 }
 

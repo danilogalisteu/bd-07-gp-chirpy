@@ -1,4 +1,4 @@
-package main
+package api
 
 import (
 	"encoding/json"
@@ -21,7 +21,7 @@ type responseAuth struct {
 	RefreshToken string `json:"refresh_token"`
 }
 
-func (cfg *apiConfig) postLogin(w http.ResponseWriter, r *http.Request) {
+func (cfg *ApiConfig) PostLogin(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	params := paramLogin{}
 	err := decoder.Decode(&params)
@@ -43,14 +43,14 @@ func (cfg *apiConfig) postLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	acessTokenString, err := generateToken(cfg.jwtSecret, "chirpy-access", strconv.Itoa(user.ID), 3600)
+	acessTokenString, err := generateToken(cfg.JwtSecret, "chirpy-access", strconv.Itoa(user.ID), 3600)
 	if err != nil {
 		log.Printf("Error creating access token:\n%v", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	refreshTokenString, err := generateToken(cfg.jwtSecret, "chirpy-refresh", strconv.Itoa(user.ID), 60*24*3600)
+	refreshTokenString, err := generateToken(cfg.JwtSecret, "chirpy-refresh", strconv.Itoa(user.ID), 60*24*3600)
 	if err != nil {
 		log.Printf("Error creating refresh token:\n%v", err)
 		w.WriteHeader(http.StatusInternalServerError)

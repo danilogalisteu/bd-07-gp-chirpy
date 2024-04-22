@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"internal/api"
 	"internal/database"
 	"log"
 	"net/http"
@@ -48,30 +49,30 @@ func main() {
 		log.Println("Error loading '.env' file")
 	}
 
-	apiCfg := apiConfig{
-		jwtSecret:      os.Getenv("JWT_SECRET"),
-		polkaApiKey:    os.Getenv("POLKA_API_KEY"),
-		fileserverHits: 0,
+	apiCfg := api.ApiConfig{
+		JwtSecret:      os.Getenv("JWT_SECRET"),
+		PolkaApiKey:    os.Getenv("POLKA_API_KEY"),
+		FileserverHits: 0,
 		DB:             db,
 	}
 
 	mux := http.NewServeMux()
-	mux.Handle("GET /app/*", apiCfg.middlewareMetricsInc(http.StripPrefix("/app", http.FileServer(http.Dir(".")))))
-	mux.HandleFunc("GET /api/healthz", healthHandler)
-	mux.HandleFunc("GET /admin/metrics", apiCfg.middlewareMetricsCount)
-	mux.HandleFunc("GET /api/reset", apiCfg.middlewareMetricsReset)
-	mux.HandleFunc("POST /api/chirps", apiCfg.postChirp)
-	mux.HandleFunc("GET /api/chirps", apiCfg.getChirps)
-	mux.HandleFunc("GET /api/chirps/{id}", apiCfg.getChirpById)
-	mux.HandleFunc("DELETE /api/chirps/{id}", apiCfg.deleteChirpById)
-	mux.HandleFunc("POST /api/users", apiCfg.postUser)
-	mux.HandleFunc("GET /api/users", apiCfg.getUsers)
-	mux.HandleFunc("PUT /api/users", apiCfg.putUser)
-	mux.HandleFunc("GET /api/users/{id}", apiCfg.getUserById)
-	mux.HandleFunc("POST /api/login", apiCfg.postLogin)
-	mux.HandleFunc("POST /api/refresh", apiCfg.postRefresh)
-	mux.HandleFunc("POST /api/revoke", apiCfg.postRevoke)
-	mux.HandleFunc("POST /api/polka/webhooks", apiCfg.postPolkaWebhooks)
+	mux.Handle("GET /app/*", apiCfg.MiddlewareMetricsInc(http.StripPrefix("/app", http.FileServer(http.Dir(".")))))
+	mux.HandleFunc("GET /api/healthz", api.HealthHandler)
+	mux.HandleFunc("GET /admin/metrics", apiCfg.MiddlewareMetricsCount)
+	mux.HandleFunc("GET /api/reset", apiCfg.MiddlewareMetricsReset)
+	mux.HandleFunc("POST /api/chirps", apiCfg.PostChirp)
+	mux.HandleFunc("GET /api/chirps", apiCfg.GetChirps)
+	mux.HandleFunc("GET /api/chirps/{id}", apiCfg.GetChirpById)
+	mux.HandleFunc("DELETE /api/chirps/{id}", apiCfg.DeleteChirpById)
+	mux.HandleFunc("POST /api/users", apiCfg.PostUser)
+	mux.HandleFunc("GET /api/users", apiCfg.GetUsers)
+	mux.HandleFunc("PUT /api/users", apiCfg.PutUser)
+	mux.HandleFunc("GET /api/users/{id}", apiCfg.GetUserById)
+	mux.HandleFunc("POST /api/login", apiCfg.PostLogin)
+	mux.HandleFunc("POST /api/refresh", apiCfg.PostRefresh)
+	mux.HandleFunc("POST /api/revoke", apiCfg.PostRevoke)
+	mux.HandleFunc("POST /api/polka/webhooks", apiCfg.PostPolkaWebhooks)
 
 	corsMux := middlewareCors(mux)
 	server := http.Server{

@@ -1,4 +1,4 @@
-package main
+package api
 
 import (
 	"encoding/json"
@@ -16,7 +16,7 @@ type paramPolkaWebhooks struct {
 	Data  paramPolkaWebhooksData `json:"data"`
 }
 
-func (cfg *apiConfig) postPolkaWebhooks(w http.ResponseWriter, r *http.Request) {
+func (cfg *ApiConfig) PostPolkaWebhooks(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	params := paramPolkaWebhooks{}
 	err := decoder.Decode(&params)
@@ -27,7 +27,7 @@ func (cfg *apiConfig) postPolkaWebhooks(w http.ResponseWriter, r *http.Request) 
 	}
 
 	apiKeyString := strings.Replace(r.Header.Get("Authorization"), "ApiKey ", "", 1)
-	if cfg.polkaApiKey != apiKeyString {
+	if cfg.PolkaApiKey != apiKeyString {
 		log.Printf("Polka webhooks received invalid API key: '%s'", apiKeyString)
 		w.WriteHeader(http.StatusUnauthorized)
 		return

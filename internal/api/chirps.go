@@ -1,4 +1,4 @@
-package main
+package api
 
 import (
 	"encoding/json"
@@ -29,7 +29,7 @@ func cleanMessage(msg string) string {
 	return strings.Join(clean, " ")
 }
 
-func (cfg *apiConfig) postChirp(w http.ResponseWriter, r *http.Request) {
+func (cfg *ApiConfig) PostChirp(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	params := paramBody{}
 	err := decoder.Decode(&params)
@@ -41,7 +41,7 @@ func (cfg *apiConfig) postChirp(w http.ResponseWriter, r *http.Request) {
 
 	tokenString := strings.Replace(r.Header.Get("Authorization"), "Bearer ", "", 1)
 
-	claims, err := validateToken(cfg.jwtSecret, tokenString, "chirpy-access")
+	claims, err := validateToken(cfg.JwtSecret, tokenString, "chirpy-access")
 	if err != nil {
 		log.Printf("Token validation error:\n%v", err)
 		w.WriteHeader(http.StatusUnauthorized)
@@ -70,7 +70,7 @@ func (cfg *apiConfig) postChirp(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusCreated, chirp)
 }
 
-func (cfg *apiConfig) getChirps(w http.ResponseWriter, r *http.Request) {
+func (cfg *ApiConfig) GetChirps(w http.ResponseWriter, r *http.Request) {
 	strAuthorId := r.URL.Query().Get("author_id")
 	sortAsc := r.URL.Query().Get("sort") != "desc"
 
@@ -107,7 +107,7 @@ func (cfg *apiConfig) getChirps(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (cfg *apiConfig) getChirpById(w http.ResponseWriter, r *http.Request) {
+func (cfg *ApiConfig) GetChirpById(w http.ResponseWriter, r *http.Request) {
 	chirps, err := cfg.DB.GetChirps()
 	if err != nil {
 		log.Printf("Error getting items from DB:\n%v", err)
@@ -133,10 +133,10 @@ func (cfg *apiConfig) getChirpById(w http.ResponseWriter, r *http.Request) {
 	respondWithError(w, http.StatusNotFound, "ID was not found")
 }
 
-func (cfg *apiConfig) deleteChirpById(w http.ResponseWriter, r *http.Request) {
+func (cfg *ApiConfig) DeleteChirpById(w http.ResponseWriter, r *http.Request) {
 	tokenString := strings.Replace(r.Header.Get("Authorization"), "Bearer ", "", 1)
 
-	claims, err := validateToken(cfg.jwtSecret, tokenString, "chirpy-access")
+	claims, err := validateToken(cfg.JwtSecret, tokenString, "chirpy-access")
 	if err != nil {
 		log.Printf("Token validation error:\n%v", err)
 		w.WriteHeader(http.StatusUnauthorized)

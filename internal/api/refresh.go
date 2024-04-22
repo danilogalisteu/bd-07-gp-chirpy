@@ -1,4 +1,4 @@
-package main
+package api
 
 import (
 	"log"
@@ -10,10 +10,10 @@ type responseRefresh struct {
 	Token string `json:"token"`
 }
 
-func (cfg *apiConfig) postRefresh(w http.ResponseWriter, r *http.Request) {
+func (cfg *ApiConfig) PostRefresh(w http.ResponseWriter, r *http.Request) {
 	tokenString := strings.Replace(r.Header.Get("Authorization"), "Bearer ", "", 1)
 
-	claims, err := validateToken(cfg.jwtSecret, tokenString, "chirpy-refresh")
+	claims, err := validateToken(cfg.JwtSecret, tokenString, "chirpy-refresh")
 	if err != nil {
 		log.Printf("Token validation error:\n%v", err)
 		w.WriteHeader(http.StatusUnauthorized)
@@ -32,7 +32,7 @@ func (cfg *apiConfig) postRefresh(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	acessTokenString, err := generateToken(cfg.jwtSecret, "chirpy-access", claims.Subject, 3600)
+	acessTokenString, err := generateToken(cfg.JwtSecret, "chirpy-access", claims.Subject, 3600)
 	if err != nil {
 		log.Printf("Error creating access token:\n%v", err)
 		w.WriteHeader(http.StatusInternalServerError)

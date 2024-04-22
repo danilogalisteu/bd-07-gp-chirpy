@@ -1,4 +1,4 @@
-package main
+package api
 
 import (
 	"encoding/json"
@@ -20,7 +20,7 @@ type BasicUser struct {
 	IsChirpyRed bool   `json:"is_chirpy_red"`
 }
 
-func (cfg *apiConfig) postUser(w http.ResponseWriter, r *http.Request) {
+func (cfg *ApiConfig) PostUser(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	params := paramUser{}
 	err := decoder.Decode(&params)
@@ -45,7 +45,7 @@ func (cfg *apiConfig) postUser(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusCreated, BasicUser{ID: user.ID, Email: user.Email, IsChirpyRed: user.IsChirpyRed})
 }
 
-func (cfg *apiConfig) getUsers(w http.ResponseWriter, r *http.Request) {
+func (cfg *ApiConfig) GetUsers(w http.ResponseWriter, r *http.Request) {
 	users, err := cfg.DB.GetUsers()
 	if err != nil {
 		log.Printf("Error getting users from DB:\n%v", err)
@@ -59,7 +59,7 @@ func (cfg *apiConfig) getUsers(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusOK, response)
 }
 
-func (cfg *apiConfig) getUserById(w http.ResponseWriter, r *http.Request) {
+func (cfg *ApiConfig) GetUserById(w http.ResponseWriter, r *http.Request) {
 	strId := r.PathValue("id")
 	id, err := strconv.Atoi(strId)
 	if err != nil {
@@ -82,7 +82,7 @@ func (cfg *apiConfig) getUserById(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusOK, BasicUser{ID: user.ID, Email: user.Email, IsChirpyRed: user.IsChirpyRed})
 }
 
-func (cfg *apiConfig) putUser(w http.ResponseWriter, r *http.Request) {
+func (cfg *ApiConfig) PutUser(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	params := paramUser{}
 	err := decoder.Decode(&params)
@@ -94,7 +94,7 @@ func (cfg *apiConfig) putUser(w http.ResponseWriter, r *http.Request) {
 
 	tokenString := strings.Replace(r.Header.Get("Authorization"), "Bearer ", "", 1)
 
-	claims, err := validateToken(cfg.jwtSecret, tokenString, "chirpy-access")
+	claims, err := validateToken(cfg.JwtSecret, tokenString, "chirpy-access")
 	if err != nil {
 		log.Printf("Token validation error:\n%v", err)
 		w.WriteHeader(http.StatusUnauthorized)
