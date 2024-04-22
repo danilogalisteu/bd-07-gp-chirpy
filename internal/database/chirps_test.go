@@ -121,4 +121,20 @@ func TestDBChirps(t *testing.T) {
 		t.Errorf("Content in the DB ('%s') doesn't match the input text ('%s')", chirps[1].Body, new_author_chirp_text)
 	}
 
+	chirps, err = db.GetChirpsByAuthor(chirp_new_author_id)
+	if err != nil {
+		t.Fatalf("Error getting messages from DB:\n%v", err)
+	}
+
+	if len(chirps) != 1 {
+		t.Fatalf("The messages DB should have length 1 instead of %d", len(chirps))
+	}
+
+	if chirps[0].AuthorID != chirp_new_author_id {
+		t.Errorf("Content in the DB ('%d') doesn't match the input author ('%d')", chirps[0].AuthorID, chirp_new_author_id)
+	}
+
+	if chirps[0].Body != new_author_chirp_text {
+		t.Errorf("Content in the DB ('%s') doesn't match the input text ('%s')", chirps[0].Body, new_author_chirp_text)
+	}
 }
