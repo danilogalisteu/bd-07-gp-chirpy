@@ -9,14 +9,14 @@ import (
 )
 
 type paramLogin struct {
-	Email            string `json:"email"`
-	Password         string `json:"password"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }
 
 type responseAuth struct {
-	ID    int    `json:"id"`
-	Email string `json:"email"`
-	Token string `json:"token"`
+	ID           int    `json:"id"`
+	Email        string `json:"email"`
+	Token        string `json:"token"`
 	RefreshToken string `json:"refresh_token"`
 }
 
@@ -56,7 +56,12 @@ func (cfg *apiConfig) postLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO register token
+	err = cfg.DB.CreateToken(refreshTokenString)
+	if err != nil {
+		log.Printf("Error storing refresh token:\n%v", err)
+		w.WriteHeader(500)
+		return
+	}
 
 	respondWithJSON(w, 200, responseAuth{ID: user.ID, Email: user.Email, Token: acessTokenString, RefreshToken: refreshTokenString})
 }

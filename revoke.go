@@ -32,7 +32,12 @@ func (cfg *apiConfig) postRevoke(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO revoke token
+	err = cfg.DB.RevokeToken((tokenString))
+	if err != nil {
+		log.Printf("Error revoking refresh token:\n%v", err)
+		w.WriteHeader(500)
+		return
+	}
 
 	w.WriteHeader(200)
 }

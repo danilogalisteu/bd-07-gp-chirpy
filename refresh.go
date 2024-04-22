@@ -31,12 +31,22 @@ func (cfg *apiConfig) postRefresh(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if claims.Issuer != "chirpy-refresh" {
-		log.Printf("Invalid token type:\n%v", err)
+		log.Printf("Invalid token type: %s", claims.Issuer)
 		w.WriteHeader(401)
 		return
 	}
 
-	// TODO check token status
+	valid, err := cfg.DB.ValidateToken(tokenString)
+	if err != nil {
+		log.Printf("Error validating refresh token:\n%v", err)
+		w.WriteHeader(500)
+		return
+	}
+	if !valid {
+		log.Printf("The refresh token was revoked")
+		w.WriteHeader(401)
+		return
+	}
 
 	acessTokenString, err := generateToken(cfg.jwtSecret, "chirpy-access", claims.Subject, 3600)
 	if err != nil {
