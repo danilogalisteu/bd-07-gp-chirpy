@@ -7,6 +7,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
+var ErrTokenEmpty = errors.New("token string empty")
 var ErrTokenParsing = errors.New("token parsing failed")
 var ErrTokenInvalid = errors.New("invalid token")
 var ErrTokenClaimsParsing = errors.New("token claims parsing failed")
@@ -32,6 +33,10 @@ func generateToken(secret string, issuer string, subject string, expires_in_seco
 }
 
 func validateToken(secret string, tokenString string) (*jwt.RegisteredClaims, error) {
+	if tokenString == "" {
+		return nil, ErrTokenEmpty
+	}
+
 	token, err := jwt.ParseWithClaims(tokenString, &jwt.RegisteredClaims{}, func(token *jwt.Token) (interface{}, error) {
 		return []byte(secret), nil
 	})
