@@ -32,7 +32,7 @@ func (cfg *apiConfig) postRevoke(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if claims.Issuer != "chirpy-refresh" {
-		log.Printf("Invalid token type:\n%v", err)
+		log.Printf("Invalid token type: %s", claims.Issuer)
 		w.WriteHeader(401)
 		return
 	}

@@ -115,15 +115,15 @@ func (cfg *apiConfig) putUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := strconv.Atoi(claims.Subject)
-	if err != nil {
-		log.Printf("Invalid token ID value:\n%v", err)
+	if claims.Issuer != "chirpy-access" {
+		log.Printf("Invalid token type: %s", claims.Issuer)
 		w.WriteHeader(401)
 		return
 	}
 
-	if claims.Issuer != "chirpy-access" {
-		log.Printf("Invalid token type:\n%v", err)
+	id, err := strconv.Atoi(claims.Subject)
+	if err != nil {
+		log.Printf("Invalid token ID value:\n%v", err)
 		w.WriteHeader(401)
 		return
 	}
