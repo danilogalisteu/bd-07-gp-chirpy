@@ -7,8 +7,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-
-	"github.com/golang-jwt/jwt/v5"
 )
 
 type paramUser struct {
@@ -95,22 +93,18 @@ func (cfg *apiConfig) putUser(w http.ResponseWriter, r *http.Request) {
 
 	tokenString := strings.Replace(r.Header.Get("Authorization"), "Bearer ", "", 1)
 
-	token, err := jwt.ParseWithClaims(tokenString, &jwt.RegisteredClaims{}, func(token *jwt.Token) (interface{}, error) {
-		return []byte(cfg.jwtSecret), nil
-	})
-	if err != nil {
+	claims, err := validateToken(cfg.jwtSecret, tokenString)
+	if err == ErrTokenParsing {
 		log.Printf("Invalid token parsing:\n%v", err)
 		w.WriteHeader(401)
 		return
 	}
-	if !token.Valid {
+	if err == ErrTokenInvalid {
 		log.Printf("Invalid token")
 		w.WriteHeader(401)
 		return
 	}
-
-	claims, ok := token.Claims.(*jwt.RegisteredClaims)
-	if !ok {
+	if err == ErrTokenClaimsParsing {
 		log.Printf("Unable to extract token claims:\n%v", err)
 		w.WriteHeader(401)
 		return

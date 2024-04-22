@@ -6,9 +6,6 @@ import (
 	"log"
 	"net/http"
 	"strconv"
-	"time"
-
-	"github.com/golang-jwt/jwt/v5"
 )
 
 type paramLogin struct {
@@ -45,22 +42,12 @@ func (cfg *apiConfig) postLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	now := time.Now()
 	expDuration := 24 * 3600
 	if params.ExpiresInSeconds > 0 {
 		expDuration = min(24*3600, params.ExpiresInSeconds)
 	}
 
-	token := jwt.NewWithClaims(
-		jwt.SigningMethodHS256,
-		jwt.RegisteredClaims{
-			Issuer:    "chirpy",
-			IssuedAt:  jwt.NewNumericDate(now),
-			ExpiresAt: jwt.NewNumericDate(now.Add(time.Duration(expDuration) * time.Second)),
-			Subject:   strconv.Itoa(user.ID),
-		},
-	)
-	tokenString, err := token.SignedString([]byte(cfg.jwtSecret))
+	tokenString, err := generateToken(cfg.jwtSecret, "chirpy", strconv.Itoa(user.ID), expDuration)
 	if err != nil {
 		log.Printf("Error creating auth token:\n%v", err)
 		w.WriteHeader(500)
