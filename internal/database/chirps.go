@@ -43,3 +43,22 @@ func (db *DB) GetChirps() ([]Chirp, error) {
 
 	return chirps, nil
 }
+
+// DeleteChirp removes a chirp from the database
+func (db *DB) DeleteChirp(id int) error {
+	dbStructure, err := db.loadDB()
+	if err != nil {
+		return err
+	}
+
+	for map_id, chirp := range dbStructure.Chirps {
+		if chirp.ID == id {
+			delete(dbStructure.Chirps, map_id)
+			break
+		}
+	}
+
+	err = db.writeDB(dbStructure)
+
+	return err
+}

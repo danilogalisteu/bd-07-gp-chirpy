@@ -69,4 +69,24 @@ func TestDBChirps(t *testing.T) {
 	if chirps[1].Body != new_chirp_text {
 		t.Errorf("Content in the DB ('%s') doesn't match the input text ('%s')", chirps[1].Body, new_chirp_text)
 	}
+
+	deleted_chirp_id := 0
+	err = db.DeleteChirp(deleted_chirp_id)
+	if err != nil {
+		t.Fatalf("Error deleting message with ID '%d' from DB:\n%v", deleted_chirp_id, err)
+	}
+
+	chirps, err = db.GetChirps()
+	if err != nil {
+		t.Fatalf("Error getting messages from DB:\n%v", err)
+	}
+
+	if len(chirps) != 1 {
+		t.Fatalf("The messages DB should have length 1 instead of %d", len(chirps))
+	}
+
+	if chirps[0].ID == deleted_chirp_id {
+		t.Errorf("ID in the DB ('%d') shouldn't match the deleted ID ('%d')", chirps[0].ID, deleted_chirp_id)
+	}
+
 }
