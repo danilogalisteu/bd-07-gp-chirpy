@@ -117,6 +117,12 @@ func (cfg *apiConfig) putUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if claims.Issuer != "chirpy-access" {
+		log.Printf("Invalid token type:\n%v", err)
+		w.WriteHeader(401)
+		return
+	}
+
 	user, err := cfg.DB.UpdateUser(id, params.Email, params.Password)
 	if err == database.ErrUserIdNotFound {
 		log.Printf("ID was not found:\n%v", err)

@@ -11,13 +11,13 @@ import (
 type paramLogin struct {
 	Email            string `json:"email"`
 	Password         string `json:"password"`
-	ExpiresInSeconds int    `json:"expires_in_seconds"`
 }
 
 type responseAuth struct {
 	ID    int    `json:"id"`
 	Email string `json:"email"`
 	Token string `json:"token"`
+	RefreshToken string `json:"refresh_token"`
 }
 
 func (cfg *apiConfig) postLogin(w http.ResponseWriter, r *http.Request) {
@@ -42,17 +42,19 @@ func (cfg *apiConfig) postLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	expDuration := 24 * 3600
-	if params.ExpiresInSeconds > 0 {
-		expDuration = min(24*3600, params.ExpiresInSeconds)
-	}
-
-	tokenString, err := generateToken(cfg.jwtSecret, "chirpy", strconv.Itoa(user.ID), expDuration)
+	acessTokenString, err := generateToken(cfg.jwtSecret, "chirpy-access", strconv.Itoa(user.ID), 3600)
 	if err != nil {
-		log.Printf("Error creating auth token:\n%v", err)
+		log.Printf("Error creating access token:\n%v", err)
 		w.WriteHeader(500)
 		return
 	}
 
-	respondWithJSON(w, 200, responseAuth{ID: user.ID, Email: user.Email, Token: tokenString})
+	refreshTokenString, err := generateToken(cfg.jwtSecret, "chirpy-refresh", strconv.Itoa(user.ID), 60*24*3600)
+	if err != nil {
+		log.Printf("Error creating refresh token:\n%v", err)
+		w.WriteHeader(500)
+		return
+	}
+
+	respondWithJSON(w, 200, responseAuth{ID: user.ID, Email: user.Email, Token: acessTokenString, RefreshToken: refreshTokenString})
 }
