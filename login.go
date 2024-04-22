@@ -16,6 +16,7 @@ type paramLogin struct {
 type responseAuth struct {
 	ID           int    `json:"id"`
 	Email        string `json:"email"`
+	IsChirpyRed  bool   `json:"is_chirpy_red"`
 	Token        string `json:"token"`
 	RefreshToken string `json:"refresh_token"`
 }
@@ -63,5 +64,5 @@ func (cfg *apiConfig) postLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondWithJSON(w, 200, responseAuth{ID: user.ID, Email: user.Email, Token: acessTokenString, RefreshToken: refreshTokenString})
+	respondWithJSON(w, 200, responseAuth{ID: user.ID, Email: user.Email, IsChirpyRed: user.IsChirpyRed, Token: acessTokenString, RefreshToken: refreshTokenString})
 }
