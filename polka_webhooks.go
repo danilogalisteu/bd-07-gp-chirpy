@@ -5,6 +5,7 @@ import (
 	"internal/database"
 	"log"
 	"net/http"
+	"strings"
 )
 
 type paramPolkaWebhooksData struct {
@@ -22,6 +23,13 @@ func (cfg *apiConfig) postPolkaWebhooks(w http.ResponseWriter, r *http.Request) 
 	if err != nil {
 		log.Printf("Error decoding parameters: %s", err)
 		w.WriteHeader(500)
+		return
+	}
+
+	apiKeyString := strings.Replace(r.Header.Get("Authorization"), "ApiKey ", "", 1)
+	if cfg.polkaApiKey != apiKeyString {
+		log.Printf("Polka webhooks received invalid API key: '%s'", apiKeyString)
+		w.WriteHeader(401)
 		return
 	}
 
