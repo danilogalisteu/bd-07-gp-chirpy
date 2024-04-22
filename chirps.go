@@ -70,12 +70,31 @@ func (cfg *apiConfig) postChirp(w http.ResponseWriter, r *http.Request) {
 }
 
 func (cfg *apiConfig) getChirps(w http.ResponseWriter, r *http.Request) {
-	chirps, err := cfg.DB.GetChirps()
-	if err != nil {
-		log.Printf("Error getting messages from DB:\n%v", err)
-	}
+	strAuthorId := r.URL.Query().Get("author_id")
 
-	respondWithJSON(w, 200, chirps)
+	if strAuthorId == "" {
+		chirps, err := cfg.DB.GetChirps()
+		if err != nil {
+			log.Printf("Error getting messages from DB:\n%v", err)
+		}
+
+		respondWithJSON(w, 200, chirps)
+	} else {
+		authorId, err := strconv.Atoi(strAuthorId)
+		if err != nil {
+			log.Printf("Error converting requested id '%d' to number:\n%v", authorId, err)
+			respondWithError(w, 400, "Author ID was not recognized as number")
+			return
+		}
+
+		chirps, err := cfg.DB.GetChirpsByAuthor(authorId)
+		if err != nil {
+			log.Printf("Error getting messages from DB:\n%v", err)
+			w.WriteHeader(500)
+		}
+
+		respondWithJSON(w, 200, chirps)
+	}
 }
 
 func (cfg *apiConfig) getChirpById(w http.ResponseWriter, r *http.Request) {
