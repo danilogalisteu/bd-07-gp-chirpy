@@ -19,16 +19,30 @@ func TestDBTokens(t *testing.T) {
 	}
 
 	tokenString := "1234567890"
+	valid, err := db.ValidateToken(tokenString)
+	if err != ErrTokenNotFound {
+		t.Fatalf("Token should not exist in the DB:\n%v", err)
+		if err != nil {
+			t.Fatalf("Error validating token:\n%v", err)
+		}
+	}
+	if (err == nil) && !valid {
+		t.Fatalf("The token was revoked")
+	}
+
 	err = db.CreateToken(tokenString)
 	if err != nil {
 		t.Fatalf("Error creating token on DB:\n%v", err)
 	}
 
-	valid, err := db.ValidateToken(tokenString)
+	valid, err = db.ValidateToken(tokenString)
+	if err == ErrTokenNotFound {
+		t.Fatalf("Token should exist in the DB:\n%v", err)
+	}
 	if err != nil {
 		t.Fatalf("Error validating token:\n%v", err)
 	}
-	if !valid {
+	if (err == nil) && !valid {
 		t.Fatalf("The token was revoked")
 	}
 
@@ -38,10 +52,13 @@ func TestDBTokens(t *testing.T) {
 	}
 
 	valid, err = db.ValidateToken(tokenString)
+	if err == ErrTokenNotFound {
+		t.Fatalf("Token should exist in the DB:\n%v", err)
+	}
 	if err != nil {
 		t.Fatalf("Error validating token:\n%v", err)
 	}
-	if valid {
+	if (err == nil) && valid {
 		t.Fatalf("The token was not revoked")
 	}
 }
