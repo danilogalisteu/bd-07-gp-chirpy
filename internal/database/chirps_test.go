@@ -1,7 +1,6 @@
 package database
 
 import (
-	"fmt"
 	"os"
 	"testing"
 )
@@ -109,7 +108,6 @@ func TestDBChirps(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error getting messages from DB:\n%v", err)
 	}
-	fmt.Println(chirps)
 
 	if len(chirps) != 2 {
 		t.Fatalf("The messages DB should have length 2 instead of %d", len(chirps))
