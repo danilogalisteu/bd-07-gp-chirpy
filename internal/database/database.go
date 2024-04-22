@@ -12,8 +12,9 @@ type DB struct {
 }
 
 type DBStructure struct {
-	Chirps map[int]Chirp `json:"chirps"`
-	Users  map[int]User  `json:"userss"`
+	Chirps map[int]Chirp    `json:"chirps"`
+	Users  map[int]User     `json:"users"`
+	Tokens map[string]Token `json:"tokens"`
 }
 
 // NewDB creates a new database connection
@@ -45,6 +46,7 @@ func (db *DB) loadDB() (DBStructure, error) {
 	dbStructure := DBStructure{
 		Chirps: make(map[int]Chirp, 0),
 		Users:  make(map[int]User, 0),
+		Tokens: make(map[string]Token, 0),
 	}
 
 	f, err := os.Open(db.path)
