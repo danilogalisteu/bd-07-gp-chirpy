@@ -70,8 +70,14 @@ func TestDBChirps(t *testing.T) {
 		t.Errorf("Content in the DB ('%s') doesn't match the input text ('%s')", chirps[1].Body, new_chirp_text)
 	}
 
-	deleted_chirp_id := 0
-	err = db.DeleteChirp(deleted_chirp_id)
+	deleted_chirp_id := 1
+	wrong_chirp_author_id := 2
+	err = db.DeleteChirp(deleted_chirp_id, wrong_chirp_author_id)
+	if err != ErrChirpAuthorInvalid {
+		t.Fatalf("Error deleting message with ID '%d' and wrong author ID '%d' from DB:\n%v", deleted_chirp_id, wrong_chirp_author_id, err)
+	}
+
+	err = db.DeleteChirp(deleted_chirp_id, chirp_author_id)
 	if err != nil {
 		t.Fatalf("Error deleting message with ID '%d' from DB:\n%v", deleted_chirp_id, err)
 	}

@@ -1,10 +1,15 @@
 package database
 
+import "errors"
+
 type Chirp struct {
 	ID       int    `json:"id"`
 	AuthorID int    `json:"author_id"`
 	Body     string `json:"body"`
 }
+
+var ErrChirpIdNotFound = errors.New("chirp id was not found")
+var ErrChirpAuthorInvalid = errors.New("chirp author invalid")
 
 // CreateChirp creates a new chirp and saves it to disk
 func (db *DB) CreateChirp(author_id int, body string) (Chirp, error) {
@@ -45,7 +50,7 @@ func (db *DB) GetChirps() ([]Chirp, error) {
 }
 
 // DeleteChirp removes a chirp from the database
-func (db *DB) DeleteChirp(id int) error {
+func (db *DB) DeleteChirp(id int, author_id int) error {
 	dbStructure, err := db.loadDB()
 	if err != nil {
 		return err
@@ -53,12 +58,14 @@ func (db *DB) DeleteChirp(id int) error {
 
 	for map_id, chirp := range dbStructure.Chirps {
 		if chirp.ID == id {
-			delete(dbStructure.Chirps, map_id)
-			break
+			if chirp.AuthorID == author_id {
+				delete(dbStructure.Chirps, map_id)
+				err = db.writeDB(dbStructure)
+				return err
+			}
+			return ErrChirpAuthorInvalid
 		}
 	}
 
-	err = db.writeDB(dbStructure)
-
-	return err
+	return ErrChirpIdNotFound
 }
