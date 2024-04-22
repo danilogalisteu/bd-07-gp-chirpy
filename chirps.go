@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"internal/database"
 	"log"
 	"net/http"
 	"strconv"
@@ -101,4 +102,49 @@ func (cfg *apiConfig) getChirpById(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respondWithError(w, 404, "ID was not found")
+}
+
+func (cfg *apiConfig) deleteChirpById(w http.ResponseWriter, r *http.Request) {
+	tokenString := strings.Replace(r.Header.Get("Authorization"), "Bearer ", "", 1)
+
+	claims, err := validateToken(cfg.jwtSecret, tokenString, "chirpy-access")
+	if err != nil {
+		log.Printf("Token validation error:\n%v", err)
+		w.WriteHeader(401)
+		return
+	}
+
+	user_id, err := strconv.Atoi(claims.Subject)
+	if err != nil {
+		log.Printf("Invalid token ID value:\n%v", err)
+		w.WriteHeader(401)
+		return
+	}
+
+	strId := r.PathValue("id")
+	chirp_id, err := strconv.Atoi(strId)
+	if err != nil {
+		log.Printf("Error converting requested id '%s' to number:\n%v", strId, err)
+		respondWithError(w, 400, "ID was not recognized as number")
+		return
+	}
+
+	err = cfg.DB.DeleteChirp(chirp_id, user_id)
+	if err == database.ErrChirpIdNotFound {
+		log.Printf("Chirp ID was not found: %d", chirp_id)
+		w.WriteHeader(404)
+		return
+	}
+	if err == database.ErrChirpAuthorInvalid {
+		log.Printf("User ID '%d' is different from author ID", user_id)
+		w.WriteHeader(403)
+		return
+	}
+	if err != nil {
+		log.Printf("Error deleting chirp on DB:\n%v", err)
+		w.WriteHeader(500)
+		return
+	}
+
+	w.WriteHeader(200)
 }
