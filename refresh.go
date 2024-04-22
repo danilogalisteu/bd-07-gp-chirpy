@@ -16,28 +16,28 @@ func (cfg *apiConfig) postRefresh(w http.ResponseWriter, r *http.Request) {
 	claims, err := validateToken(cfg.jwtSecret, tokenString, "chirpy-refresh")
 	if err != nil {
 		log.Printf("Token validation error:\n%v", err)
-		w.WriteHeader(401)
+		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
 	valid, err := cfg.DB.ValidateToken(tokenString)
 	if err != nil {
 		log.Printf("Error validating refresh token:\n%v", err)
-		w.WriteHeader(500)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	if !valid {
 		log.Printf("The refresh token was revoked")
-		w.WriteHeader(401)
+		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
 	acessTokenString, err := generateToken(cfg.jwtSecret, "chirpy-access", claims.Subject, 3600)
 	if err != nil {
 		log.Printf("Error creating access token:\n%v", err)
-		w.WriteHeader(500)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	respondWithJSON(w, 200, responseRefresh{Token: acessTokenString})
+	respondWithJSON(w, http.StatusOK, responseRefresh{Token: acessTokenString})
 }

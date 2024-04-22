@@ -27,33 +27,33 @@ func (cfg *apiConfig) postLogin(w http.ResponseWriter, r *http.Request) {
 	err := decoder.Decode(&params)
 	if err != nil {
 		log.Printf("Error decoding parameters: %s", err)
-		w.WriteHeader(500)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	user, err := cfg.DB.ValidateUser(params.Email, params.Password)
 	if (err == database.ErrUserEmailNotFound) || (err == database.ErrUserInfoNotValid) {
 		log.Printf("Logical error validating user on DB:\n%v", err)
-		w.WriteHeader(401)
+		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 	if err != nil {
 		log.Printf("Server error validating user on DB:\n%v", err)
-		w.WriteHeader(500)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	acessTokenString, err := generateToken(cfg.jwtSecret, "chirpy-access", strconv.Itoa(user.ID), 3600)
 	if err != nil {
 		log.Printf("Error creating access token:\n%v", err)
-		w.WriteHeader(500)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	refreshTokenString, err := generateToken(cfg.jwtSecret, "chirpy-refresh", strconv.Itoa(user.ID), 60*24*3600)
 	if err != nil {
 		log.Printf("Error creating refresh token:\n%v", err)
-		w.WriteHeader(500)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
@@ -61,10 +61,10 @@ func (cfg *apiConfig) postLogin(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if err != database.ErrTokenExists { // possible collision because of 1 second precision
 			log.Printf("Error storing refresh token:\n%v", err)
-			w.WriteHeader(500)
+			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 	}
 
-	respondWithJSON(w, 200, responseAuth{ID: user.ID, Email: user.Email, IsChirpyRed: user.IsChirpyRed, Token: acessTokenString, RefreshToken: refreshTokenString})
+	respondWithJSON(w, http.StatusOK, responseAuth{ID: user.ID, Email: user.Email, IsChirpyRed: user.IsChirpyRed, Token: acessTokenString, RefreshToken: refreshTokenString})
 }

@@ -26,23 +26,23 @@ func (cfg *apiConfig) postUser(w http.ResponseWriter, r *http.Request) {
 	err := decoder.Decode(&params)
 	if err != nil {
 		log.Printf("Error decoding parameters: %s", err)
-		w.WriteHeader(500)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	user, err := cfg.DB.CreateUser(params.Email, params.Password)
 	if err == database.ErrUserExists {
 		log.Printf("User already exists on DB:\n%v", err)
-		w.WriteHeader(403)
+		w.WriteHeader(http.StatusForbidden)
 		return
 	}
 	if err != nil {
 		log.Printf("Error creating user on DB:\n%v", err)
-		w.WriteHeader(500)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	respondWithJSON(w, 201, BasicUser{ID: user.ID, Email: user.Email, IsChirpyRed: user.IsChirpyRed})
+	respondWithJSON(w, http.StatusCreated, BasicUser{ID: user.ID, Email: user.Email, IsChirpyRed: user.IsChirpyRed})
 }
 
 func (cfg *apiConfig) getUsers(w http.ResponseWriter, r *http.Request) {
@@ -56,7 +56,7 @@ func (cfg *apiConfig) getUsers(w http.ResponseWriter, r *http.Request) {
 		response = append(response, BasicUser{ID: user.ID, Email: user.Email, IsChirpyRed: user.IsChirpyRed})
 	}
 
-	respondWithJSON(w, 200, response)
+	respondWithJSON(w, http.StatusOK, response)
 }
 
 func (cfg *apiConfig) getUserById(w http.ResponseWriter, r *http.Request) {
@@ -64,22 +64,22 @@ func (cfg *apiConfig) getUserById(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(strId)
 	if err != nil {
 		log.Printf("Error converting requested id '%s' to number:\n%v", strId, err)
-		respondWithError(w, 400, "ID was not recognized as number")
+		respondWithError(w, http.StatusBadRequest, "ID was not recognized as number")
 		return
 	}
 
 	user, err := cfg.DB.GetUserById(id)
 	if err == database.ErrUserIdNotFound {
-		respondWithError(w, 404, "ID was not found")
+		respondWithError(w, http.StatusNotFound, "ID was not found")
 		return
 	}
 	if err != nil {
 		log.Printf("Error getting user from DB:\n%v", err)
-		w.WriteHeader(500)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	respondWithJSON(w, 200, BasicUser{ID: user.ID, Email: user.Email, IsChirpyRed: user.IsChirpyRed})
+	respondWithJSON(w, http.StatusOK, BasicUser{ID: user.ID, Email: user.Email, IsChirpyRed: user.IsChirpyRed})
 }
 
 func (cfg *apiConfig) putUser(w http.ResponseWriter, r *http.Request) {
@@ -88,7 +88,7 @@ func (cfg *apiConfig) putUser(w http.ResponseWriter, r *http.Request) {
 	err := decoder.Decode(&params)
 	if err != nil {
 		log.Printf("Error decoding parameters: %s", err)
-		w.WriteHeader(500)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
@@ -97,28 +97,28 @@ func (cfg *apiConfig) putUser(w http.ResponseWriter, r *http.Request) {
 	claims, err := validateToken(cfg.jwtSecret, tokenString, "chirpy-access")
 	if err != nil {
 		log.Printf("Token validation error:\n%v", err)
-		w.WriteHeader(401)
+		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
 	id, err := strconv.Atoi(claims.Subject)
 	if err != nil {
 		log.Printf("Invalid token ID value:\n%v", err)
-		w.WriteHeader(401)
+		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
 	user, err := cfg.DB.UpdateUserById(id, params.Email, params.Password)
 	if err == database.ErrUserIdNotFound {
 		log.Printf("ID was not found:\n%v", err)
-		w.WriteHeader(404)
+		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 	if err != nil {
 		log.Printf("Error updating user on DB:\n%v", err)
-		w.WriteHeader(500)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	respondWithJSON(w, 200, BasicUser{ID: user.ID, Email: user.Email, IsChirpyRed: user.IsChirpyRed})
+	respondWithJSON(w, http.StatusOK, BasicUser{ID: user.ID, Email: user.Email, IsChirpyRed: user.IsChirpyRed})
 }

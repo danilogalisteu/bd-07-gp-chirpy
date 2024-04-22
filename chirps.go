@@ -35,7 +35,7 @@ func (cfg *apiConfig) postChirp(w http.ResponseWriter, r *http.Request) {
 	err := decoder.Decode(&params)
 	if err != nil {
 		log.Printf("Error decoding parameters: %s", err)
-		w.WriteHeader(500)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
@@ -44,19 +44,19 @@ func (cfg *apiConfig) postChirp(w http.ResponseWriter, r *http.Request) {
 	claims, err := validateToken(cfg.jwtSecret, tokenString, "chirpy-access")
 	if err != nil {
 		log.Printf("Token validation error:\n%v", err)
-		w.WriteHeader(401)
+		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
 	id, err := strconv.Atoi(claims.Subject)
 	if err != nil {
 		log.Printf("Invalid token ID value:\n%v", err)
-		w.WriteHeader(401)
+		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
 	if len(params.Body) > 140 {
-		respondWithError(w, 400, "Chirp is too long")
+		respondWithError(w, http.StatusBadRequest, "Chirp is too long")
 		return
 	}
 
@@ -67,7 +67,7 @@ func (cfg *apiConfig) postChirp(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Error creating chirp on DB:\n%v", err)
 	}
 
-	respondWithJSON(w, 201, chirp)
+	respondWithJSON(w, http.StatusCreated, chirp)
 }
 
 func (cfg *apiConfig) getChirps(w http.ResponseWriter, r *http.Request) {
@@ -84,26 +84,26 @@ func (cfg *apiConfig) getChirps(w http.ResponseWriter, r *http.Request) {
 		} else {
 			sort.Slice(chirps, func(i, j int) bool { return chirps[i].ID > chirps[j].ID })
 		}
-		respondWithJSON(w, 200, chirps)
+		respondWithJSON(w, http.StatusOK, chirps)
 	} else {
 		authorId, err := strconv.Atoi(strAuthorId)
 		if err != nil {
 			log.Printf("Error converting requested id '%d' to number:\n%v", authorId, err)
-			respondWithError(w, 400, "Author ID was not recognized as number")
+			respondWithError(w, http.StatusBadRequest, "Author ID was not recognized as number")
 			return
 		}
 
 		chirps, err := cfg.DB.GetChirpsByAuthor(authorId)
 		if err != nil {
 			log.Printf("Error getting messages from DB:\n%v", err)
-			w.WriteHeader(500)
+			w.WriteHeader(http.StatusInternalServerError)
 		}
 		if sortAsc {
 			sort.Slice(chirps, func(i, j int) bool { return chirps[i].ID < chirps[j].ID })
 		} else {
 			sort.Slice(chirps, func(i, j int) bool { return chirps[i].ID > chirps[j].ID })
 		}
-		respondWithJSON(w, 200, chirps)
+		respondWithJSON(w, http.StatusOK, chirps)
 	}
 }
 
@@ -111,7 +111,7 @@ func (cfg *apiConfig) getChirpById(w http.ResponseWriter, r *http.Request) {
 	chirps, err := cfg.DB.GetChirps()
 	if err != nil {
 		log.Printf("Error getting items from DB:\n%v", err)
-		w.WriteHeader(500)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
@@ -119,18 +119,18 @@ func (cfg *apiConfig) getChirpById(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(strId)
 	if err != nil {
 		log.Printf("Error converting requested id '%s' to number:\n%v", strId, err)
-		respondWithError(w, 400, "ID was not recognized as number")
+		respondWithError(w, http.StatusBadRequest, "ID was not recognized as number")
 		return
 	}
 
 	for _, chirp := range chirps {
 		if chirp.ID == id {
-			respondWithJSON(w, 200, chirp)
+			respondWithJSON(w, http.StatusOK, chirp)
 			return
 		}
 	}
 
-	respondWithError(w, 404, "ID was not found")
+	respondWithError(w, http.StatusNotFound, "ID was not found")
 }
 
 func (cfg *apiConfig) deleteChirpById(w http.ResponseWriter, r *http.Request) {
@@ -139,14 +139,14 @@ func (cfg *apiConfig) deleteChirpById(w http.ResponseWriter, r *http.Request) {
 	claims, err := validateToken(cfg.jwtSecret, tokenString, "chirpy-access")
 	if err != nil {
 		log.Printf("Token validation error:\n%v", err)
-		w.WriteHeader(401)
+		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
 	user_id, err := strconv.Atoi(claims.Subject)
 	if err != nil {
 		log.Printf("Invalid token ID value:\n%v", err)
-		w.WriteHeader(401)
+		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
@@ -154,26 +154,26 @@ func (cfg *apiConfig) deleteChirpById(w http.ResponseWriter, r *http.Request) {
 	chirp_id, err := strconv.Atoi(strId)
 	if err != nil {
 		log.Printf("Error converting requested id '%s' to number:\n%v", strId, err)
-		respondWithError(w, 400, "ID was not recognized as number")
+		respondWithError(w, http.StatusBadRequest, "ID was not recognized as number")
 		return
 	}
 
 	err = cfg.DB.DeleteChirpById(chirp_id, user_id)
 	if err == database.ErrChirpIdNotFound {
 		log.Printf("Chirp ID was not found: %d", chirp_id)
-		w.WriteHeader(404)
+		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 	if err == database.ErrChirpAuthorInvalid {
 		log.Printf("User ID '%d' is different from author ID", user_id)
-		w.WriteHeader(403)
+		w.WriteHeader(http.StatusForbidden)
 		return
 	}
 	if err != nil {
 		log.Printf("Error deleting chirp on DB:\n%v", err)
-		w.WriteHeader(500)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	w.WriteHeader(200)
+	w.WriteHeader(http.StatusOK)
 }
