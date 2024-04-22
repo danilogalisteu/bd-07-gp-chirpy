@@ -108,7 +108,7 @@ func (cfg *apiConfig) putUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := cfg.DB.UpdateUser(id, params.Email, params.Password)
+	user, err := cfg.DB.UpdateUserById(id, params.Email, params.Password)
 	if err == database.ErrUserIdNotFound {
 		log.Printf("ID was not found:\n%v", err)
 		w.WriteHeader(404)

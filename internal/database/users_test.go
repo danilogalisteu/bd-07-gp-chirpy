@@ -101,7 +101,7 @@ func TestDBUsers(t *testing.T) {
 	}
 
 	updated_user_email := "contact@example.com"
-	user, err = db.UpdateUser(user_id, updated_user_email, "")
+	user, err = db.UpdateUserById(user_id, updated_user_email, "")
 	if err != nil {
 		t.Fatalf("Error updating user user with ID '%d' from DB:\n%v", user_id, err)
 	}
@@ -115,7 +115,7 @@ func TestDBUsers(t *testing.T) {
 	}
 
 	updated_user_password := "012345"
-	user, err = db.UpdateUser(user_id, "", updated_user_password)
+	user, err = db.UpdateUserById(user_id, "", updated_user_password)
 	if err != nil {
 		t.Fatalf("Error updating user with ID '%d' from DB:\n%v", user_id, err)
 	}

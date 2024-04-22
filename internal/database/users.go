@@ -116,8 +116,8 @@ func (db *DB) ValidateUser(email string, password string) (User, error) {
 	return User{}, ErrUserInfoNotValid
 }
 
-// UpdateUser updates email and password for an existing user
-func (db *DB) UpdateUser(id int, email string, password string) (User, error) {
+// UpdateUserById updates email and password for an existing user
+func (db *DB) UpdateUserById(id int, email string, password string) (User, error) {
 	user, err := db.GetUserById(id)
 	if err == ErrUserIdNotFound {
 		return User{}, ErrUserIdNotFound
@@ -149,7 +149,7 @@ func (db *DB) UpdateUser(id int, email string, password string) (User, error) {
 	return user, err
 }
 
-// UpgradeUser updates red status for an existing user
+// UpgradeUserById updates red status for an existing user
 func (db *DB) UpgradeUserById(id int, red_status bool) error {
 	user, err := db.GetUserById(id)
 	if err == ErrUserIdNotFound {
