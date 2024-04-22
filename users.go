@@ -15,8 +15,9 @@ type paramUser struct {
 }
 
 type BasicUser struct {
-	ID    int    `json:"id"`
-	Email string `json:"email"`
+	ID          int    `json:"id"`
+	Email       string `json:"email"`
+	IsChirpyRed bool   `json:"is_chirpy_red"`
 }
 
 func (cfg *apiConfig) postUser(w http.ResponseWriter, r *http.Request) {
@@ -41,7 +42,7 @@ func (cfg *apiConfig) postUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondWithJSON(w, 201, BasicUser{ID: user.ID, Email: user.Email})
+	respondWithJSON(w, 201, BasicUser{ID: user.ID, Email: user.Email, IsChirpyRed: user.IsChirpyRed})
 }
 
 func (cfg *apiConfig) getUsers(w http.ResponseWriter, r *http.Request) {
@@ -52,7 +53,7 @@ func (cfg *apiConfig) getUsers(w http.ResponseWriter, r *http.Request) {
 
 	response := make([]BasicUser, 0)
 	for _, user := range users {
-		response = append(response, BasicUser{ID: user.ID, Email: user.Email})
+		response = append(response, BasicUser{ID: user.ID, Email: user.Email, IsChirpyRed: user.IsChirpyRed})
 	}
 
 	respondWithJSON(w, 200, response)
@@ -78,7 +79,7 @@ func (cfg *apiConfig) getUserById(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondWithJSON(w, 200, BasicUser{ID: user.ID, Email: user.Email})
+	respondWithJSON(w, 200, BasicUser{ID: user.ID, Email: user.Email, IsChirpyRed: user.IsChirpyRed})
 }
 
 func (cfg *apiConfig) putUser(w http.ResponseWriter, r *http.Request) {
@@ -119,5 +120,5 @@ func (cfg *apiConfig) putUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondWithJSON(w, 200, BasicUser{ID: user.ID, Email: user.Email})
+	respondWithJSON(w, 200, BasicUser{ID: user.ID, Email: user.Email, IsChirpyRed: user.IsChirpyRed})
 }
