@@ -18,7 +18,11 @@ func (db *DB) CreateChirp(author_id int, body string) (Chirp, error) {
 		return Chirp{}, err
 	}
 
-	id := len(dbStructure.Chirps) + 1
+	id := 0
+	for _, chirp := range dbStructure.Chirps {
+		id = max(id, chirp.ID)
+	}
+	id += 1
 
 	chirp := Chirp{
 		ID:       id,
