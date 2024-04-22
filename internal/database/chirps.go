@@ -49,8 +49,8 @@ func (db *DB) GetChirps() ([]Chirp, error) {
 	return chirps, nil
 }
 
-// DeleteChirp removes a chirp from the database
-func (db *DB) DeleteChirp(id int, author_id int) error {
+// DeleteChirpById removes a chirp from the database if the author is verified
+func (db *DB) DeleteChirpById(id int, author_id int) error {
 	dbStructure, err := db.loadDB()
 	if err != nil {
 		return err

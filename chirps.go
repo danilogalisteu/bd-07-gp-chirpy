@@ -129,7 +129,7 @@ func (cfg *apiConfig) deleteChirpById(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = cfg.DB.DeleteChirp(chirp_id, user_id)
+	err = cfg.DB.DeleteChirpById(chirp_id, user_id)
 	if err == database.ErrChirpIdNotFound {
 		log.Printf("Chirp ID was not found: %d", chirp_id)
 		w.WriteHeader(404)

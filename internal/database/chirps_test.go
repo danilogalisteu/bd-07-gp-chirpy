@@ -72,12 +72,12 @@ func TestDBChirps(t *testing.T) {
 
 	deleted_chirp_id := 1
 	wrong_chirp_author_id := 2
-	err = db.DeleteChirp(deleted_chirp_id, wrong_chirp_author_id)
+	err = db.DeleteChirpById(deleted_chirp_id, wrong_chirp_author_id)
 	if err != ErrChirpAuthorInvalid {
 		t.Fatalf("Error deleting message with ID '%d' and wrong author ID '%d' from DB:\n%v", deleted_chirp_id, wrong_chirp_author_id, err)
 	}
 
-	err = db.DeleteChirp(deleted_chirp_id, chirp_author_id)
+	err = db.DeleteChirpById(deleted_chirp_id, chirp_author_id)
 	if err != nil {
 		t.Fatalf("Error deleting message with ID '%d' from DB:\n%v", deleted_chirp_id, err)
 	}
