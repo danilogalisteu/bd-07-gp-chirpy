@@ -117,10 +117,33 @@ func TestDBUsers(t *testing.T) {
 	updated_user_password := "012345"
 	user, err = db.UpdateUser(user_id, "", updated_user_password)
 	if err != nil {
-		t.Fatalf("Error updating user user with ID '%d' from DB:\n%v", user_id, err)
+		t.Fatalf("Error updating user with ID '%d' from DB:\n%v", user_id, err)
 	}
 
 	if bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(updated_user_password)) != nil {
 		t.Errorf("Password in the DB ('%s') doesn't match the updated password ('%s')", user.Password, updated_user_password)
+	}
+
+	user, err = db.GetUserById(user_id)
+	if err != nil {
+		t.Fatalf("Error getting user with ID '%d' from DB:\n%v", user_id, err)
+	}
+
+	if user.IsChirpyRed {
+		t.Fatalf("Initial red status for user with ID '%d' should be false", user_id)
+	}
+
+	err = db.UpgradeUserById(user_id, true)
+	if err != nil {
+		t.Fatalf("Error upgrading user status with ID '%d' from DB:\n%v", user_id, err)
+	}
+
+	user, err = db.GetUserById(user_id)
+	if err != nil {
+		t.Fatalf("Error getting user with ID '%d' from DB:\n%v", user_id, err)
+	}
+
+	if !user.IsChirpyRed {
+		t.Fatalf("Upgraded red status for user with ID '%d' should be true", user_id)
 	}
 }
