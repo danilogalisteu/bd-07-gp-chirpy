@@ -177,3 +177,43 @@ func (cfg *ApiConfig) DeleteChirpById(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 }
+
+func (cfg *ApiConfig) ValidateChirp(w http.ResponseWriter, r *http.Request) {
+	type paramRequest struct {
+		Body string `json:"body"`
+	}
+
+	type paramResponseValid struct {
+		Valid bool `json:"valid"`
+	}
+	resValid := paramResponseValid{
+		Valid: true,
+	}
+
+	type paramResponseError struct {
+		Error string `json:"error"`
+	}
+	resInvalid := paramResponseError{
+		Error: "Invalid JSON",
+	}
+	resTooLong := paramResponseError{
+		Error: "Chirp is too long",
+	}
+
+	decoder := json.NewDecoder(r.Body)
+	params := paramRequest{}
+	err := decoder.Decode(&params)
+	if err != nil {
+		log.Printf("Invalid JSON: %s", err)
+		respondWithJSON(w, http.StatusBadRequest, resInvalid)
+		return
+	}
+
+	if len(params.Body) > 140 {
+		log.Printf("Chirp is too long: %d characters", len(params.Body))
+		respondWithJSON(w, http.StatusBadRequest, resTooLong)
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, resValid)
+}
