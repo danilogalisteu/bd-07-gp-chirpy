@@ -178,16 +178,28 @@ func (cfg *ApiConfig) DeleteChirpById(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+func cleanWords(msg string) string {
+	profane := []string{"kerfuffle", "sharbert", "fornax"}
+	clean := make([]string, 0)
+	for _, word := range strings.Split(msg, " ") {
+		for _, pword := range profane {
+			if strings.ToLower(word) == pword {
+				word = "****"
+				break
+			}
+		}
+		clean = append(clean, word)
+	}
+	return strings.Join(clean, " ")
+}
+
 func (cfg *ApiConfig) ValidateChirp(w http.ResponseWriter, r *http.Request) {
 	type paramRequest struct {
 		Body string `json:"body"`
 	}
 
 	type paramResponseValid struct {
-		Valid bool `json:"valid"`
-	}
-	resValid := paramResponseValid{
-		Valid: true,
+		CleanedBody string `json:"cleaned_body"`
 	}
 
 	type paramResponseError struct {
@@ -215,5 +227,8 @@ func (cfg *ApiConfig) ValidateChirp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	resValid := paramResponseValid{
+		CleanedBody: cleanWords(params.Body),
+	}
 	respondWithJSON(w, http.StatusOK, resValid)
 }
