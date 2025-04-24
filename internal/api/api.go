@@ -11,7 +11,7 @@ type ApiConfig struct {
 	JwtSecret      string
 	PolkaApiKey    string
 	FileserverHits int
-	DB             *database.DB
+	DbQueries      *database.Queries
 }
 
 type returnError struct {

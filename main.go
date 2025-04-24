@@ -1,7 +1,7 @@
 package main
 
 import (
-	"flag"
+	"database/sql"
 	"internal/api"
 	"internal/database"
 	"log"
@@ -9,6 +9,8 @@ import (
 	"os"
 
 	"github.com/joho/godotenv"
+
+	_ "github.com/lib/pq"
 )
 
 func middlewareCors(next http.Handler) http.Handler {
@@ -30,11 +32,20 @@ func main() {
 		log.Println("Error loading '.env' file")
 	}
 
+	dbURL := os.Getenv("DB_URL")
+	db, err := sql.Open("postgres", dbURL)
+	if err != nil {
+		log.Println("Error connecting to database:", err)
+		os.Exit(1)
+	}
+
+	dbQueries := database.New(db)
+
 	apiCfg := api.ApiConfig{
 		JwtSecret:      os.Getenv("JWT_SECRET"),
 		PolkaApiKey:    os.Getenv("POLKA_API_KEY"),
 		FileserverHits: 0,
-		DB:             db,
+		DbQueries:      dbQueries,
 	}
 
 	mux := http.NewServeMux()
