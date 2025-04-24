@@ -25,26 +25,7 @@ func middlewareCors(next http.Handler) http.Handler {
 }
 
 func main() {
-	dbg := flag.Bool("debug", false, "Enable debug mode")
-	flag.Parse()
-
-	fname := "database.json"
-	if *dbg {
-		if _, err := os.Stat(fname); os.IsNotExist(err) {
-			log.Printf("DB file '%s' doesn't exist:\n%v", fname, err)
-		} else {
-			err := os.Remove(fname)
-			if err != nil {
-				log.Printf("Error removing DB file '%s':\n%v", fname, err)
-			}
-		}
-	}
-	db, err := database.NewDB(fname)
-	if err != nil {
-		log.Printf("Error creating DB with file '%s':\n%v", fname, err)
-	}
-
-	err = godotenv.Load()
+	err := godotenv.Load()
 	if err != nil {
 		log.Println("Error loading '.env' file")
 	}
@@ -61,19 +42,7 @@ func main() {
 	mux.HandleFunc("GET /api/healthz", api.HealthHandler)
 	mux.HandleFunc("GET /admin/metrics", apiCfg.MiddlewareMetricsCount)
 	mux.HandleFunc("POST /admin/reset", apiCfg.MiddlewareMetricsReset)
-	mux.HandleFunc("POST /api/chirps", apiCfg.PostChirp)
 	mux.HandleFunc("POST /api/validate_chirp", apiCfg.ValidateChirp)
-	mux.HandleFunc("GET /api/chirps", apiCfg.GetChirps)
-	mux.HandleFunc("GET /api/chirps/{id}", apiCfg.GetChirpById)
-	mux.HandleFunc("DELETE /api/chirps/{id}", apiCfg.DeleteChirpById)
-	mux.HandleFunc("POST /api/users", apiCfg.PostUser)
-	mux.HandleFunc("GET /api/users", apiCfg.GetUsers)
-	mux.HandleFunc("PUT /api/users", apiCfg.PutUser)
-	mux.HandleFunc("GET /api/users/{id}", apiCfg.GetUserById)
-	mux.HandleFunc("POST /api/login", apiCfg.PostLogin)
-	mux.HandleFunc("POST /api/refresh", apiCfg.PostRefresh)
-	mux.HandleFunc("POST /api/revoke", apiCfg.PostRevoke)
-	mux.HandleFunc("POST /api/polka/webhooks", apiCfg.PostPolkaWebhooks)
 
 	corsMux := middlewareCors(mux)
 	server := http.Server{
