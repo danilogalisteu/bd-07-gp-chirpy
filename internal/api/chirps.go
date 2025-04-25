@@ -99,3 +99,32 @@ func (cfg *ApiConfig) GetChirps(w http.ResponseWriter, r *http.Request) {
 	}
 	respondWithJSON(w, http.StatusOK, resChirps)
 }
+
+func (cfg *ApiConfig) GetChirp(w http.ResponseWriter, r *http.Request) {
+	chirpID := r.PathValue("chirpID")
+	if chirpID == "" {
+		log.Printf("Missing chirpID")
+		respondWithJSON(w, http.StatusBadRequest, returnError{Error: "Missing chirp ID"})
+		return
+	}
+
+	dbChirp, err := cfg.DbQueries.GetChirp(r.Context(), uuid.MustParse(chirpID))
+	if err != nil {
+		if err.Error() == "sql: no rows in result set" {
+			log.Printf("Chirp not found: %s", err)
+			respondWithJSON(w, http.StatusNotFound, returnError{Error: "Chirp not found"})
+			return
+		}
+		log.Printf("Error getting chirp: %s", err)
+		respondWithJSON(w, http.StatusInternalServerError, returnError{Error: "Internal Server Error"})
+		return
+	}
+	resChirp := Chirp{
+		ID:        dbChirp.ID,
+		CreatedAt: dbChirp.CreatedAt,
+		UpdatedAt: dbChirp.UpdatedAt,
+		Body:      dbChirp.Body,
+		UserID:    dbChirp.UserID,
+	}
+	respondWithJSON(w, http.StatusOK, resChirp)
+}
