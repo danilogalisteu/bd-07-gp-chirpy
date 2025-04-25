@@ -78,3 +78,24 @@ func (cfg *ApiConfig) CreateChirp(w http.ResponseWriter, r *http.Request) {
 
 	respondWithJSON(w, http.StatusCreated, resChirp)
 }
+
+func (cfg *ApiConfig) GetChirps(w http.ResponseWriter, r *http.Request) {
+	dbChirps, err := cfg.DbQueries.GetChirps(r.Context())
+	if err != nil {
+		log.Printf("Error getting chirps: %s", err)
+		respondWithJSON(w, http.StatusInternalServerError, returnError{Error: "Internal Server Error"})
+		return
+	}
+
+	resChirps := make([]Chirp, len(dbChirps))
+	for i, dbChirp := range dbChirps {
+		resChirps[i] = Chirp{
+			ID:        dbChirp.ID,
+			CreatedAt: dbChirp.CreatedAt,
+			UpdatedAt: dbChirp.UpdatedAt,
+			Body:      dbChirp.Body,
+			UserID:    dbChirp.UserID,
+		}
+	}
+	respondWithJSON(w, http.StatusOK, resChirps)
+}
