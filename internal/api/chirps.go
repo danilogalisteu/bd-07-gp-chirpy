@@ -2,10 +2,22 @@ package api
 
 import (
 	"encoding/json"
+	"internal/database"
 	"log"
 	"net/http"
 	"strings"
+	"time"
+
+	"github.com/google/uuid"
 )
+
+type Chirp struct {
+	ID        uuid.UUID `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	Body      string    `json:"body"`
+	UserID    uuid.UUID `json:"user_id"`
+}
 
 func cleanMessage(msg string) string {
 	profane := []string{"kerfuffle", "sharbert", "fornax"}
@@ -22,13 +34,10 @@ func cleanMessage(msg string) string {
 	return strings.Join(clean, " ")
 }
 
-func (cfg *ApiConfig) ValidateChirp(w http.ResponseWriter, r *http.Request) {
+func (cfg *ApiConfig) CreateChirp(w http.ResponseWriter, r *http.Request) {
 	type paramRequest struct {
-		Body string `json:"body"`
-	}
-
-	type returnClean struct {
-		CleanedBody string `json:"cleaned_body"`
+		Body   string `json:"body"`
+		UserID string `json:"user_id"`
 	}
 
 	decoder := json.NewDecoder(r.Body)
@@ -46,8 +55,26 @@ func (cfg *ApiConfig) ValidateChirp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resValid := returnClean{
-		CleanedBody: cleanMessage(params.Body),
+	dbChirp, err := cfg.DbQueries.CreateChirp(r.Context(), database.CreateChirpParams{
+		ID:        uuid.New(),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		Body:      cleanMessage(params.Body),
+		UserID:    uuid.MustParse(params.UserID),
+	})
+	if err != nil {
+		log.Printf("Error creating chirp: %s", err)
+		respondWithJSON(w, http.StatusInternalServerError, returnError{Error: "Internal Server Error"})
+		return
 	}
-	respondWithJSON(w, http.StatusOK, resValid)
+
+	resChirp := Chirp{
+		ID:        dbChirp.ID,
+		CreatedAt: dbChirp.CreatedAt,
+		UpdatedAt: dbChirp.UpdatedAt,
+		Body:      dbChirp.Body,
+		UserID:    dbChirp.UserID,
+	}
+
+	respondWithJSON(w, http.StatusCreated, resChirp)
 }
