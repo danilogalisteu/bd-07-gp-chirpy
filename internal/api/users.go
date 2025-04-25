@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"internal/auth"
 	"internal/database"
 	"log"
 	"net/http"
@@ -19,7 +20,8 @@ type User struct {
 
 func (cfg *ApiConfig) CreateUser(w http.ResponseWriter, r *http.Request) {
 	type paramRequest struct {
-		Email string `json:"email"`
+		Email    string `json:"email"`
+		Password string `json:"password"`
 	}
 
 	decoder := json.NewDecoder(r.Body)
@@ -31,11 +33,19 @@ func (cfg *ApiConfig) CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	hash, err := auth.HashPassword(params.Password)
+	if err != nil {
+		log.Printf("Error hashing password: %s", err)
+		respondWithJSON(w, http.StatusInternalServerError, returnError{Error: "Internal Server Error"})
+		return
+	}
+
 	dbUser, err := cfg.DbQueries.CreateUser(r.Context(), database.CreateUserParams{
-		ID:        uuid.New(),
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
-		Email:     params.Email,
+		ID:             uuid.New(),
+		CreatedAt:      time.Now(),
+		UpdatedAt:      time.Now(),
+		Email:          params.Email,
+		HashedPassword: hash,
 	})
 	if err != nil {
 		if err.Error() == "pq: duplicate key value violates unique constraint \"users_email_key\"" {
@@ -56,4 +66,46 @@ func (cfg *ApiConfig) CreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respondWithJSON(w, http.StatusCreated, resUser)
+}
+
+func (cfg *ApiConfig) GetUser(w http.ResponseWriter, r *http.Request) {
+	type paramRequest struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+
+	decoder := json.NewDecoder(r.Body)
+	params := paramRequest{}
+	err := decoder.Decode(&params)
+	if err != nil {
+		log.Printf("Invalid JSON: %s", err)
+		respondWithJSON(w, http.StatusBadRequest, returnError{Error: "Invalid JSON"})
+		return
+	}
+
+	dbUser, err := cfg.DbQueries.GetUser(r.Context(), params.Email)
+	if err != nil {
+		if err.Error() == "pq: no rows in result set" {
+			log.Printf("User not found: %s", err)
+			respondWithJSON(w, http.StatusNotFound, returnError{Error: "User not found"})
+			return
+		}
+		log.Printf("Error getting user: %s", err)
+		respondWithJSON(w, http.StatusInternalServerError, returnError{Error: "Internal Server Error"})
+		return
+	}
+
+	if err := auth.CheckPasswordHash(dbUser.HashedPassword, params.Password); err != nil {
+		log.Printf("Invalid password: %s", err)
+		respondWithJSON(w, http.StatusUnauthorized, returnError{Error: "Invalid email or password"})
+		return
+	}
+
+	resUser := User{
+		ID:        dbUser.ID,
+		CreatedAt: dbUser.CreatedAt,
+		UpdatedAt: dbUser.UpdatedAt,
+		Email:     dbUser.Email,
+	}
+	respondWithJSON(w, http.StatusOK, resUser)
 }
