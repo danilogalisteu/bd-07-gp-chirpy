@@ -7,10 +7,6 @@ import (
 	"strings"
 )
 
-type paramBody struct {
-	Body string `json:"body"`
-}
-
 func cleanMessage(msg string) string {
 	profane := []string{"kerfuffle", "sharbert", "fornax"}
 	clean := make([]string, 0)
@@ -31,18 +27,8 @@ func (cfg *ApiConfig) ValidateChirp(w http.ResponseWriter, r *http.Request) {
 		Body string `json:"body"`
 	}
 
-	type paramResponseValid struct {
+	type returnClean struct {
 		CleanedBody string `json:"cleaned_body"`
-	}
-
-	type paramResponseError struct {
-		Error string `json:"error"`
-	}
-	resInvalid := paramResponseError{
-		Error: "Invalid JSON",
-	}
-	resTooLong := paramResponseError{
-		Error: "Chirp is too long",
 	}
 
 	decoder := json.NewDecoder(r.Body)
@@ -50,17 +36,17 @@ func (cfg *ApiConfig) ValidateChirp(w http.ResponseWriter, r *http.Request) {
 	err := decoder.Decode(&params)
 	if err != nil {
 		log.Printf("Invalid JSON: %s", err)
-		respondWithJSON(w, http.StatusBadRequest, resInvalid)
+		respondWithJSON(w, http.StatusBadRequest, returnError{Error: "Invalid JSON"})
 		return
 	}
 
 	if len(params.Body) > 140 {
 		log.Printf("Chirp is too long: %d characters", len(params.Body))
-		respondWithJSON(w, http.StatusBadRequest, resTooLong)
+		respondWithJSON(w, http.StatusBadRequest, returnError{Error: "Chirp is too long"})
 		return
 	}
 
-	resValid := paramResponseValid{
+	resValid := returnClean{
 		CleanedBody: cleanMessage(params.Body),
 	}
 	respondWithJSON(w, http.StatusOK, resValid)
