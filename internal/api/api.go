@@ -2,9 +2,10 @@ package api
 
 import (
 	"encoding/json"
-	"internal/database"
 	"log"
 	"net/http"
+
+	"github.com/danilogalisteu/bd-07-gp-chirpy/internal/database"
 )
 
 type ApiConfig struct {

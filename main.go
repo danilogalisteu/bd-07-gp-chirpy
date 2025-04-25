@@ -2,11 +2,12 @@ package main
 
 import (
 	"database/sql"
-	"internal/api"
-	"internal/database"
 	"log"
 	"net/http"
 	"os"
+
+	"github.com/danilogalisteu/bd-07-gp-chirpy/internal/api"
+	"github.com/danilogalisteu/bd-07-gp-chirpy/internal/database"
 
 	"github.com/joho/godotenv"
 

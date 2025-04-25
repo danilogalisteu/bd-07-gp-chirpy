@@ -2,11 +2,13 @@ package api
 
 import (
 	"encoding/json"
-	"internal/auth"
-	"internal/database"
 	"log"
 	"net/http"
 	"time"
+
+	"github.com/danilogalisteu/bd-07-gp-chirpy/internal/database"
+
+	"github.com/danilogalisteu/bd-07-gp-chirpy/internal/auth"
 
 	"github.com/google/uuid"
 )
