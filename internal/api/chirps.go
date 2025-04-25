@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/danilogalisteu/bd-07-gp-chirpy/internal/auth"
 	"github.com/danilogalisteu/bd-07-gp-chirpy/internal/database"
 
 	"github.com/google/uuid"
@@ -37,13 +38,25 @@ func cleanMessage(msg string) string {
 
 func (cfg *ApiConfig) CreateChirp(w http.ResponseWriter, r *http.Request) {
 	type paramRequest struct {
-		Body   string `json:"body"`
-		UserID string `json:"user_id"`
+		Body string `json:"body"`
+	}
+
+	token, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		log.Printf("Error getting bearer token: %s", err)
+		respondWithJSON(w, http.StatusUnauthorized, returnError{Error: "Unauthorized"})
+		return
+	}
+	userID, err := auth.ValidateJWT(token, cfg.JwtSecret)
+	if err != nil {
+		log.Printf("Error validating token: %s", err)
+		respondWithJSON(w, http.StatusUnauthorized, returnError{Error: "Unauthorized"})
+		return
 	}
 
 	decoder := json.NewDecoder(r.Body)
 	params := paramRequest{}
-	err := decoder.Decode(&params)
+	err = decoder.Decode(&params)
 	if err != nil {
 		log.Printf("Invalid JSON: %s", err)
 		respondWithJSON(w, http.StatusBadRequest, returnError{Error: "Invalid JSON"})
@@ -61,7 +74,7 @@ func (cfg *ApiConfig) CreateChirp(w http.ResponseWriter, r *http.Request) {
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 		Body:      cleanMessage(params.Body),
-		UserID:    uuid.MustParse(params.UserID),
+		UserID:    userID,
 	})
 	if err != nil {
 		log.Printf("Error creating chirp: %s", err)
