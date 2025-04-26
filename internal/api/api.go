@@ -2,16 +2,17 @@ package api
 
 import (
 	"encoding/json"
-	"internal/database"
 	"log"
 	"net/http"
+
+	"github.com/danilogalisteu/bd-07-gp-chirpy/internal/database"
 )
 
 type ApiConfig struct {
 	JwtSecret      string
 	PolkaApiKey    string
 	FileserverHits int
-	DB             *database.DB
+	DbQueries      *database.Queries
 }
 
 type returnError struct {

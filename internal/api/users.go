@@ -2,123 +2,263 @@ package api
 
 import (
 	"encoding/json"
-	"internal/database"
 	"log"
 	"net/http"
-	"strconv"
-	"strings"
+	"time"
+
+	"github.com/danilogalisteu/bd-07-gp-chirpy/internal/database"
+
+	"github.com/danilogalisteu/bd-07-gp-chirpy/internal/auth"
+
+	"github.com/google/uuid"
 )
 
-type paramUser struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
+type User struct {
+	ID           uuid.UUID `json:"id"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
+	Email        string    `json:"email"`
+	IsChirpyRed  bool      `json:"is_chirpy_red"`
+	Token        string    `json:"token,omitempty"`
+	RefreshToken string    `json:"refresh_token,omitempty"`
 }
 
-type BasicUser struct {
-	ID          int    `json:"id"`
-	Email       string `json:"email"`
-	IsChirpyRed bool   `json:"is_chirpy_red"`
-}
+func (cfg *ApiConfig) CreateUser(w http.ResponseWriter, r *http.Request) {
+	type paramRequest struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
 
-func (cfg *ApiConfig) PostUser(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
-	params := paramUser{}
+	params := paramRequest{}
 	err := decoder.Decode(&params)
 	if err != nil {
-		log.Printf("Error decoding parameters: %s", err)
-		w.WriteHeader(http.StatusInternalServerError)
+		log.Printf("Invalid JSON: %s", err)
+		respondWithJSON(w, http.StatusBadRequest, returnError{Error: "Invalid JSON"})
 		return
 	}
 
-	user, err := cfg.DB.CreateUser(params.Email, params.Password)
-	if err == database.ErrUserExists {
-		log.Printf("User already exists on DB:\n%v", err)
-		w.WriteHeader(http.StatusForbidden)
-		return
-	}
+	hash, err := auth.HashPassword(params.Password)
 	if err != nil {
-		log.Printf("Error creating user on DB:\n%v", err)
-		w.WriteHeader(http.StatusInternalServerError)
+		log.Printf("Error hashing password: %s", err)
+		respondWithJSON(w, http.StatusInternalServerError, returnError{Error: "Internal Server Error"})
 		return
 	}
 
-	respondWithJSON(w, http.StatusCreated, BasicUser{ID: user.ID, Email: user.Email, IsChirpyRed: user.IsChirpyRed})
+	dbUser, err := cfg.DbQueries.CreateUser(r.Context(), database.CreateUserParams{
+		ID:             uuid.New(),
+		CreatedAt:      time.Now(),
+		UpdatedAt:      time.Now(),
+		Email:          params.Email,
+		HashedPassword: hash,
+	})
+	if err != nil {
+		if err.Error() == "pq: duplicate key value violates unique constraint \"users_email_key\"" {
+			log.Printf("Email already in use: %s", err)
+			respondWithJSON(w, http.StatusConflict, returnError{Error: "Email already in use"})
+			return
+		}
+		log.Printf("Error creating user: %s", err)
+		respondWithJSON(w, http.StatusInternalServerError, returnError{Error: "Internal Server Error"})
+		return
+	}
+
+	resUser := User{
+		ID:        dbUser.ID,
+		CreatedAt: dbUser.CreatedAt,
+		UpdatedAt: dbUser.UpdatedAt,
+		Email:     dbUser.Email,
+	}
+
+	respondWithJSON(w, http.StatusCreated, resUser)
 }
 
-func (cfg *ApiConfig) GetUsers(w http.ResponseWriter, r *http.Request) {
-	users, err := cfg.DB.GetUsers()
-	if err != nil {
-		log.Printf("Error getting users from DB:\n%v", err)
+func (cfg *ApiConfig) GetUser(w http.ResponseWriter, r *http.Request) {
+	type paramRequest struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
 	}
 
-	response := make([]BasicUser, 0)
-	for _, user := range users {
-		response = append(response, BasicUser{ID: user.ID, Email: user.Email, IsChirpyRed: user.IsChirpyRed})
-	}
-
-	respondWithJSON(w, http.StatusOK, response)
-}
-
-func (cfg *ApiConfig) GetUserById(w http.ResponseWriter, r *http.Request) {
-	strId := r.PathValue("id")
-	id, err := strconv.Atoi(strId)
-	if err != nil {
-		log.Printf("Error converting requested id '%s' to number:\n%v", strId, err)
-		respondWithError(w, http.StatusBadRequest, "ID was not recognized as number")
-		return
-	}
-
-	user, err := cfg.DB.GetUserById(id)
-	if err == database.ErrUserIdNotFound {
-		respondWithError(w, http.StatusNotFound, "ID was not found")
-		return
-	}
-	if err != nil {
-		log.Printf("Error getting user from DB:\n%v", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	respondWithJSON(w, http.StatusOK, BasicUser{ID: user.ID, Email: user.Email, IsChirpyRed: user.IsChirpyRed})
-}
-
-func (cfg *ApiConfig) PutUser(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
-	params := paramUser{}
+	params := paramRequest{}
 	err := decoder.Decode(&params)
 	if err != nil {
-		log.Printf("Error decoding parameters: %s", err)
-		w.WriteHeader(http.StatusInternalServerError)
+		log.Printf("Invalid JSON: %s", err)
+		respondWithJSON(w, http.StatusBadRequest, returnError{Error: "Invalid JSON"})
 		return
 	}
 
-	tokenString := strings.Replace(r.Header.Get("Authorization"), "Bearer ", "", 1)
-
-	claims, err := validateToken(cfg.JwtSecret, tokenString, "chirpy-access")
+	dbUser, err := cfg.DbQueries.GetUser(r.Context(), params.Email)
 	if err != nil {
-		log.Printf("Token validation error:\n%v", err)
-		w.WriteHeader(http.StatusUnauthorized)
+		if err.Error() == "pq: no rows in result set" {
+			log.Printf("User not found: %s", err)
+			respondWithJSON(w, http.StatusNotFound, returnError{Error: "User not found"})
+			return
+		}
+		log.Printf("Error getting user: %s", err)
+		respondWithJSON(w, http.StatusInternalServerError, returnError{Error: "Internal Server Error"})
 		return
 	}
 
-	id, err := strconv.Atoi(claims.Subject)
+	if err := auth.CheckPasswordHash(dbUser.HashedPassword, params.Password); err != nil {
+		log.Printf("Invalid password: %s", err)
+		respondWithJSON(w, http.StatusUnauthorized, returnError{Error: "Invalid email or password"})
+		return
+	}
+
+	token, err := auth.MakeJWT(dbUser.ID, cfg.JwtSecret, time.Duration(3600)*time.Second)
 	if err != nil {
-		log.Printf("Invalid token ID value:\n%v", err)
-		w.WriteHeader(http.StatusUnauthorized)
+		log.Printf("Error creating JWT: %s", err)
+		respondWithJSON(w, http.StatusInternalServerError, returnError{Error: "Internal Server Error"})
 		return
 	}
 
-	user, err := cfg.DB.UpdateUserById(id, params.Email, params.Password)
-	if err == database.ErrUserIdNotFound {
-		log.Printf("ID was not found:\n%v", err)
-		w.WriteHeader(http.StatusNotFound)
-		return
-	}
+	refreshToken, err := auth.MakeRefreshToken()
 	if err != nil {
-		log.Printf("Error updating user on DB:\n%v", err)
-		w.WriteHeader(http.StatusInternalServerError)
+		log.Printf("Error creating refresh token: %s", err)
+		respondWithJSON(w, http.StatusInternalServerError, returnError{Error: "Internal Server Error"})
 		return
 	}
 
-	respondWithJSON(w, http.StatusOK, BasicUser{ID: user.ID, Email: user.Email, IsChirpyRed: user.IsChirpyRed})
+	dbToken, err := cfg.DbQueries.CreateRefreshToken(r.Context(), database.CreateRefreshTokenParams{
+		Token:     refreshToken,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		UserID:    dbUser.ID,
+		ExpiresAt: time.Now().Add(time.Duration(60*24) * time.Hour),
+	})
+	if err != nil {
+		log.Printf("Error creating refresh token: %s", err)
+		respondWithJSON(w, http.StatusInternalServerError, returnError{Error: "Internal Server Error"})
+		return
+	}
+
+	resUser := User{
+		ID:           dbUser.ID,
+		CreatedAt:    dbUser.CreatedAt,
+		UpdatedAt:    dbUser.UpdatedAt,
+		Email:        dbUser.Email,
+		IsChirpyRed:  dbUser.IsChirpyRed,
+		Token:        token,
+		RefreshToken: dbToken.Token,
+	}
+	respondWithJSON(w, http.StatusOK, resUser)
+}
+
+func (cfg *ApiConfig) UpdateUser(w http.ResponseWriter, r *http.Request) {
+	type paramRequest struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+
+	token, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		log.Printf("Error getting bearer token: %s", err)
+		respondWithJSON(w, http.StatusUnauthorized, returnError{Error: "Unauthorized"})
+		return
+	}
+	userID, err := auth.ValidateJWT(token, cfg.JwtSecret)
+	if err != nil {
+		log.Printf("Error validating token: %s", err)
+		respondWithJSON(w, http.StatusUnauthorized, returnError{Error: "Unauthorized"})
+		return
+	}
+
+	decoder := json.NewDecoder(r.Body)
+	params := paramRequest{}
+	err = decoder.Decode(&params)
+	if err != nil {
+		log.Printf("Invalid JSON: %s", err)
+		respondWithJSON(w, http.StatusBadRequest, returnError{Error: "Invalid JSON"})
+		return
+	}
+
+	hash, err := auth.HashPassword(params.Password)
+	if err != nil {
+		log.Printf("Error hashing password: %s", err)
+		respondWithJSON(w, http.StatusInternalServerError, returnError{Error: "Internal Server Error"})
+		return
+	}
+
+	dbUser, err := cfg.DbQueries.UpdateUser(r.Context(), database.UpdateUserParams{
+		ID:             userID,
+		Email:          params.Email,
+		HashedPassword: hash,
+		UpdatedAt:      time.Now(),
+	})
+	if err != nil {
+		log.Printf("Error updating user: %s", err)
+		respondWithJSON(w, http.StatusInternalServerError, returnError{Error: "Internal Server Error"})
+		return
+	}
+
+	resUser := User{
+		ID:          dbUser.ID,
+		CreatedAt:   dbUser.CreatedAt,
+		UpdatedAt:   dbUser.UpdatedAt,
+		Email:       dbUser.Email,
+		IsChirpyRed: dbUser.IsChirpyRed,
+	}
+	respondWithJSON(w, http.StatusOK, resUser)
+}
+
+func (cfg *ApiConfig) UpdateUserRed(w http.ResponseWriter, r *http.Request) {
+	apiKey, err := auth.GetAPIKey(r.Header)
+	if err != nil {
+		log.Printf("Error getting API key: %s", err)
+		respondWithJSON(w, http.StatusUnauthorized, returnError{Error: "Unauthorized"})
+		return
+	}
+	if apiKey != cfg.PolkaApiKey {
+		log.Printf("Invalid API key: %s", apiKey)
+		respondWithJSON(w, http.StatusUnauthorized, returnError{Error: "Unauthorized"})
+		return
+	}
+
+	type paramRequest struct {
+		Event string `json:"event"`
+		Data  struct {
+			UserID string `json:"user_id"`
+		} `json:"data"`
+	}
+
+	decoder := json.NewDecoder(r.Body)
+	params := paramRequest{}
+	err = decoder.Decode(&params)
+	if err != nil {
+		log.Printf("Invalid JSON: %s", err)
+		respondWithJSON(w, http.StatusBadRequest, returnError{Error: "Invalid JSON"})
+		return
+	}
+
+	if params.Event != "user.upgraded" {
+		log.Printf("Unhandled event: %s", params.Event)
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	userID, err := uuid.Parse(params.Data.UserID)
+	if err != nil {
+		log.Printf("Invalid user ID: %s", err)
+		respondWithJSON(w, http.StatusBadRequest, returnError{Error: "Invalid user ID"})
+		return
+	}
+
+	_, err = cfg.DbQueries.UpdateUserRed(r.Context(), database.UpdateUserRedParams{
+		ID:          userID,
+		UpdatedAt:   time.Now(),
+		IsChirpyRed: true,
+	})
+	if err != nil {
+		if err.Error() == "pq: no rows in result set" {
+			log.Printf("User not found: %s", err)
+			respondWithJSON(w, http.StatusNotFound, returnError{Error: "User not found"})
+			return
+		}
+		log.Printf("Error updating user: %s", err)
+		respondWithJSON(w, http.StatusInternalServerError, returnError{Error: "Internal Server Error"})
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }

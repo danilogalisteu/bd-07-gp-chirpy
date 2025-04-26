@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 )
 
@@ -30,7 +31,17 @@ func (cfg *ApiConfig) MiddlewareMetricsCount(w http.ResponseWriter, r *http.Requ
 
 func (cfg *ApiConfig) MiddlewareMetricsReset(w http.ResponseWriter, r *http.Request) {
 	cfg.FileserverHits = 0
+
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+
+	err := cfg.DbQueries.ResetUsers(r.Context())
+	if err != nil {
+		log.Printf("Error resetting users: %s", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("Internal Server Error"))
+		return
+	}
+
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("OK"))
 }
