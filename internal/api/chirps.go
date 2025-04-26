@@ -94,11 +94,34 @@ func (cfg *ApiConfig) CreateChirp(w http.ResponseWriter, r *http.Request) {
 }
 
 func (cfg *ApiConfig) GetChirps(w http.ResponseWriter, r *http.Request) {
-	dbChirps, err := cfg.DbQueries.GetChirps(r.Context())
-	if err != nil {
-		log.Printf("Error getting chirps: %s", err)
-		respondWithJSON(w, http.StatusInternalServerError, returnError{Error: "Internal Server Error"})
-		return
+	var userID uuid.NullUUID
+	var dbChirps []database.Chirp
+	var err error
+
+	queryUserID := r.URL.Query().Get("author_id")
+	if queryUserID != "" {
+		if userID.UUID, err = uuid.Parse(queryUserID); err != nil {
+			log.Printf("Invalid author_id: %s", err)
+			respondWithJSON(w, http.StatusBadRequest, returnError{Error: "Invalid author_id"})
+			return
+		}
+		userID.Valid = true
+	}
+
+	if userID.Valid {
+		dbChirps, err = cfg.DbQueries.GetChirpsByUser(r.Context(), userID.UUID)
+		if err != nil {
+			log.Printf("Error getting chirps by user ID: %s", err)
+			respondWithJSON(w, http.StatusInternalServerError, returnError{Error: "Internal Server Error"})
+			return
+		}
+	} else {
+		dbChirps, err = cfg.DbQueries.GetChirps(r.Context())
+		if err != nil {
+			log.Printf("Error getting chirps: %s", err)
+			respondWithJSON(w, http.StatusInternalServerError, returnError{Error: "Internal Server Error"})
+			return
+		}
 	}
 
 	resChirps := make([]Chirp, len(dbChirps))
