@@ -55,6 +55,7 @@ func main() {
 	mux.HandleFunc("GET /admin/metrics", apiCfg.MiddlewareMetricsCount)
 	mux.HandleFunc("POST /admin/reset", apiCfg.MiddlewareMetricsReset)
 	mux.HandleFunc("POST /api/users", apiCfg.CreateUser)
+	mux.HandleFunc("PUT /api/users", apiCfg.UpdateUser)
 	mux.HandleFunc("POST /api/login", apiCfg.GetUser)
 	mux.HandleFunc("POST /api/refresh", apiCfg.GetToken)
 	mux.HandleFunc("POST /api/revoke", apiCfg.UpdateToken)

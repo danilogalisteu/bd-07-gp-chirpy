@@ -142,3 +142,59 @@ func (cfg *ApiConfig) GetUser(w http.ResponseWriter, r *http.Request) {
 	}
 	respondWithJSON(w, http.StatusOK, resUser)
 }
+
+func (cfg *ApiConfig) UpdateUser(w http.ResponseWriter, r *http.Request) {
+	type paramRequest struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+
+	token, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		log.Printf("Error getting bearer token: %s", err)
+		respondWithJSON(w, http.StatusUnauthorized, returnError{Error: "Unauthorized"})
+		return
+	}
+	userID, err := auth.ValidateJWT(token, cfg.JwtSecret)
+	if err != nil {
+		log.Printf("Error validating token: %s", err)
+		respondWithJSON(w, http.StatusUnauthorized, returnError{Error: "Unauthorized"})
+		return
+	}
+
+	decoder := json.NewDecoder(r.Body)
+	params := paramRequest{}
+	err = decoder.Decode(&params)
+	if err != nil {
+		log.Printf("Invalid JSON: %s", err)
+		respondWithJSON(w, http.StatusBadRequest, returnError{Error: "Invalid JSON"})
+		return
+	}
+
+	hash, err := auth.HashPassword(params.Password)
+	if err != nil {
+		log.Printf("Error hashing password: %s", err)
+		respondWithJSON(w, http.StatusInternalServerError, returnError{Error: "Internal Server Error"})
+		return
+	}
+
+	dbUser, err := cfg.DbQueries.UpdateUser(r.Context(), database.UpdateUserParams{
+		ID:             userID,
+		Email:          params.Email,
+		HashedPassword: hash,
+		UpdatedAt:      time.Now(),
+	})
+	if err != nil {
+		log.Printf("Error updating user: %s", err)
+		respondWithJSON(w, http.StatusInternalServerError, returnError{Error: "Internal Server Error"})
+		return
+	}
+
+	resUser := User{
+		ID:        dbUser.ID,
+		CreatedAt: dbUser.CreatedAt,
+		UpdatedAt: dbUser.UpdatedAt,
+		Email:     dbUser.Email,
+	}
+	respondWithJSON(w, http.StatusOK, resUser)
+}
