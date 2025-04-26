@@ -142,3 +142,57 @@ func (cfg *ApiConfig) GetChirp(w http.ResponseWriter, r *http.Request) {
 	}
 	respondWithJSON(w, http.StatusOK, resChirp)
 }
+
+func (cfg *ApiConfig) DeleteChirp(w http.ResponseWriter, r *http.Request) {
+	chirpID := r.PathValue("chirpID")
+	if chirpID == "" {
+		log.Printf("Missing chirpID")
+		respondWithJSON(w, http.StatusBadRequest, returnError{Error: "Missing chirp ID"})
+		return
+	}
+
+	token, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		log.Printf("Error getting bearer token: %s", err)
+		respondWithJSON(w, http.StatusUnauthorized, returnError{Error: "Unauthorized"})
+		return
+	}
+	userID, err := auth.ValidateJWT(token, cfg.JwtSecret)
+	if err != nil {
+		log.Printf("Error validating token: %s", err)
+		respondWithJSON(w, http.StatusUnauthorized, returnError{Error: "Unauthorized"})
+		return
+	}
+
+	dbChirp, err := cfg.DbQueries.GetChirp(r.Context(), uuid.MustParse(chirpID))
+	if err != nil {
+		if err.Error() == "sql: no rows in result set" {
+			log.Printf("Chirp not found: %s", err)
+			respondWithJSON(w, http.StatusNotFound, returnError{Error: "Chirp not found"})
+			return
+		}
+		log.Printf("Error getting chirp: %s", err)
+		respondWithJSON(w, http.StatusInternalServerError, returnError{Error: "Internal Server Error"})
+		return
+	}
+
+	if dbChirp.UserID != userID {
+		log.Printf("User %s is not authorized to delete chirp %s", userID, chirpID)
+		respondWithJSON(w, http.StatusForbidden, returnError{Error: "Forbidden"})
+		return
+	}
+
+	err = cfg.DbQueries.DeleteChirp(r.Context(), dbChirp.ID)
+	if err != nil {
+		if err.Error() == "sql: no rows in result set" {
+			log.Printf("Chirp not found: %s", err)
+			respondWithJSON(w, http.StatusNotFound, returnError{Error: "Chirp not found"})
+			return
+		}
+		log.Printf("Error deleting chirp: %s", err)
+		respondWithJSON(w, http.StatusInternalServerError, returnError{Error: "Internal Server Error"})
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}

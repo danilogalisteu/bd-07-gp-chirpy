@@ -62,6 +62,7 @@ func main() {
 	mux.HandleFunc("POST /api/chirps", apiCfg.CreateChirp)
 	mux.HandleFunc("GET /api/chirps", apiCfg.GetChirps)
 	mux.HandleFunc("GET /api/chirps/{chirpID}", apiCfg.GetChirp)
+	mux.HandleFunc("DELETE /api/chirps/{chirpID}", apiCfg.DeleteChirp)
 
 	corsMux := middlewareCors(mux)
 	server := http.Server{
