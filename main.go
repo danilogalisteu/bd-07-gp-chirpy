@@ -44,7 +44,7 @@ func main() {
 
 	apiCfg := api.ApiConfig{
 		JwtSecret:      os.Getenv("JWT_SECRET"),
-		PolkaApiKey:    os.Getenv("POLKA_API_KEY"),
+		PolkaApiKey:    os.Getenv("POLKA_KEY"),
 		FileserverHits: 0,
 		DbQueries:      dbQueries,
 	}

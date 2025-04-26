@@ -203,6 +203,18 @@ func (cfg *ApiConfig) UpdateUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (cfg *ApiConfig) UpdateUserRed(w http.ResponseWriter, r *http.Request) {
+	apiKey, err := auth.GetAPIKey(r.Header)
+	if err != nil {
+		log.Printf("Error getting API key: %s", err)
+		respondWithJSON(w, http.StatusUnauthorized, returnError{Error: "Unauthorized"})
+		return
+	}
+	if apiKey != cfg.PolkaApiKey {
+		log.Printf("Invalid API key: %s", apiKey)
+		respondWithJSON(w, http.StatusUnauthorized, returnError{Error: "Unauthorized"})
+		return
+	}
+
 	type paramRequest struct {
 		Event string `json:"event"`
 		Data  struct {
@@ -212,7 +224,7 @@ func (cfg *ApiConfig) UpdateUserRed(w http.ResponseWriter, r *http.Request) {
 
 	decoder := json.NewDecoder(r.Body)
 	params := paramRequest{}
-	err := decoder.Decode(&params)
+	err = decoder.Decode(&params)
 	if err != nil {
 		log.Printf("Invalid JSON: %s", err)
 		respondWithJSON(w, http.StatusBadRequest, returnError{Error: "Invalid JSON"})
