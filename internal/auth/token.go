@@ -29,3 +29,19 @@ func GetBearerToken(headers http.Header) (string, error) {
 	// Return the token
 	return authHeader[7:], nil
 }
+
+func GetAPIKey(headers http.Header) (string, error) {
+	// Get the Authorization header
+	authHeader := headers.Get("Authorization")
+	if authHeader == "" {
+		return "", jwt.ErrTokenUnverifiable
+	}
+
+	// Check if the header starts with "ApiKey "
+	if len(authHeader) < 7 || authHeader[:7] != "ApiKey " {
+		return "", jwt.ErrTokenUnverifiable
+	}
+
+	// Return the API key
+	return authHeader[7:], nil
+}
