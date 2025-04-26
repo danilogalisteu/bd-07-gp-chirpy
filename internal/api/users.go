@@ -201,3 +201,52 @@ func (cfg *ApiConfig) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	}
 	respondWithJSON(w, http.StatusOK, resUser)
 }
+
+func (cfg *ApiConfig) UpdateUserRed(w http.ResponseWriter, r *http.Request) {
+	type paramRequest struct {
+		Event string `json:"event"`
+		Data  struct {
+			UserID string `json:"user_id"`
+		} `json:"data"`
+	}
+
+	decoder := json.NewDecoder(r.Body)
+	params := paramRequest{}
+	err := decoder.Decode(&params)
+	if err != nil {
+		log.Printf("Invalid JSON: %s", err)
+		respondWithJSON(w, http.StatusBadRequest, returnError{Error: "Invalid JSON"})
+		return
+	}
+
+	if params.Event != "user.upgraded" {
+		log.Printf("Unhandled event: %s", params.Event)
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	userID, err := uuid.Parse(params.Data.UserID)
+	if err != nil {
+		log.Printf("Invalid user ID: %s", err)
+		respondWithJSON(w, http.StatusBadRequest, returnError{Error: "Invalid user ID"})
+		return
+	}
+
+	_, err = cfg.DbQueries.UpdateUserRed(r.Context(), database.UpdateUserRedParams{
+		ID:          userID,
+		UpdatedAt:   time.Now(),
+		IsChirpyRed: true,
+	})
+	if err != nil {
+		if err.Error() == "pq: no rows in result set" {
+			log.Printf("User not found: %s", err)
+			respondWithJSON(w, http.StatusNotFound, returnError{Error: "User not found"})
+			return
+		}
+		log.Printf("Error updating user: %s", err)
+		respondWithJSON(w, http.StatusInternalServerError, returnError{Error: "Internal Server Error"})
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
