@@ -142,3 +142,48 @@ func (cfg *ApiConfig) GetUser(w http.ResponseWriter, r *http.Request) {
 	}
 	respondWithJSON(w, http.StatusOK, resUser)
 }
+
+func (cfg *ApiConfig) GetToken(w http.ResponseWriter, r *http.Request) {
+	refreshToken, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		log.Printf("Error getting refresh token: %s", err)
+		respondWithJSON(w, http.StatusUnauthorized, returnError{Error: "Unauthorized"})
+		return
+	}
+
+	dbToken, err := cfg.DbQueries.GetRefreshToken(r.Context(), refreshToken)
+	if err != nil {
+		if err.Error() == "pq: no rows in result set" {
+			log.Printf("Refresh token not found: %s", err)
+			respondWithJSON(w, http.StatusUnauthorized, returnError{Error: "Refresh token not found"})
+			return
+		}
+		log.Printf("Error getting refresh token: %s", err)
+		respondWithJSON(w, http.StatusInternalServerError, returnError{Error: "Internal Server Error"})
+		return
+	}
+
+	if dbToken.ExpiresAt.Before(time.Now()) {
+		log.Printf("Refresh token expired on %v", dbToken.ExpiresAt)
+		respondWithJSON(w, http.StatusUnauthorized, returnError{Error: "Refresh token expired"})
+		return
+	}
+
+	if dbToken.RevokedAt.Valid {
+		log.Printf("Refresh token revoked on %v", dbToken.RevokedAt.Time)
+		respondWithJSON(w, http.StatusUnauthorized, returnError{Error: "Refresh token revoked"})
+		return
+	}
+
+	token, err := auth.MakeJWT(dbToken.UserID, cfg.JwtSecret, time.Duration(3600)*time.Second)
+	if err != nil {
+		log.Printf("Error creating JWT: %s", err)
+		respondWithJSON(w, http.StatusInternalServerError, returnError{Error: "Internal Server Error"})
+		return
+	}
+
+	type resultToken struct {
+		Token string `json:"token"`
+	}
+	respondWithJSON(w, http.StatusOK, resultToken{Token: token})
+}
