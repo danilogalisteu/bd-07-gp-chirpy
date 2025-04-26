@@ -1,6 +1,7 @@
 package api
 
 import (
+	"database/sql"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -186,4 +187,40 @@ func (cfg *ApiConfig) GetToken(w http.ResponseWriter, r *http.Request) {
 		Token string `json:"token"`
 	}
 	respondWithJSON(w, http.StatusOK, resultToken{Token: token})
+}
+
+func (cfg *ApiConfig) UpdateToken(w http.ResponseWriter, r *http.Request) {
+	refreshToken, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		log.Printf("Error getting refresh token: %s", err)
+		respondWithJSON(w, http.StatusUnauthorized, returnError{Error: "Unauthorized"})
+		return
+	}
+
+	dbToken, err := cfg.DbQueries.GetRefreshToken(r.Context(), refreshToken)
+	if err != nil {
+		if err.Error() == "pq: no rows in result set" {
+			log.Printf("Refresh token not found: %s", err)
+			respondWithJSON(w, http.StatusUnauthorized, returnError{Error: "Refresh token not found"})
+			return
+		}
+		log.Printf("Error getting refresh token: %s", err)
+		respondWithJSON(w, http.StatusInternalServerError, returnError{Error: "Internal Server Error"})
+		return
+	}
+
+	err = cfg.DbQueries.UpdateToken(r.Context(), database.UpdateTokenParams{
+		RevokedAt: sql.NullTime{
+			Time:  time.Now(),
+			Valid: true,
+		},
+		Token: dbToken.Token,
+	})
+	if err != nil {
+		log.Printf("Error revoking refresh token: %s", err)
+		respondWithJSON(w, http.StatusInternalServerError, returnError{Error: "Internal Server Error"})
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
